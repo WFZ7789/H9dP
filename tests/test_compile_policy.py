@@ -63,7 +63,7 @@ def test_diagnostic_helper_can_still_deliberately_use_eager():
 
 
 def test_formal_default_configs_enable_compile():
-    for path in ("configs/train.yaml", "configs/t1a.yaml"):
+    for path in ("configs/train.yaml", "configs/t1a.yaml", "configs/m1.yaml"):
         assert load_config(path)["training"]["torch_compile"] is True
 
 

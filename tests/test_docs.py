@@ -13,7 +13,7 @@ def test_root_markdown_contains_only_project_entry_and_instructions():
 
 
 def test_each_model_has_an_index_and_t1a_separates_plan_from_results():
-    for name in ("T1A", "P3", "P3.1", "v2"):
+    for name in ("T1A", "P3", "P3.1", "v2", "M1"):
         assert (ROOT / "docs" / name / "README.md").is_file()
     for name in ("PLAN.md", "FIT24_RESULTS.md"):
         assert (ROOT / "docs" / "T1A" / name).is_file()

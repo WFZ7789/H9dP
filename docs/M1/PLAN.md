@@ -2,7 +2,7 @@
 
 ## 1. 状态与边界
 
-本文件是**设计，不是已实现模型或训练结果**。已执行工作仅为[真实表格审计](DATA_AUDIT.md)、5 折线性映射诊断、拟议层清单的参数计数及审计工具单测。未做网络前向、影像参数拟合或 GPU 性能验证。
+本文件是测试版设计协议。**2026-11-14 UTC 已按此协议实现并完成 dev 与 final 两阶段**，结果、实际超参和偏差见 [RESULTS.md](RESULTS.md)。执行中做过一次开发协议修订（`lr 1e-3 → 3e-4`、`weight_decay 1e-4 → 1e-3`），49 条最终验证在冻结后只评估一次。以下保留原始设计；实际执行以结果报告为准。
 
 目标是检验：给每个小 E 提供 MOTIS 中间参数的直接监督，再独立组合，能否比相同输入、相近参数预算的直接 dP 回归更有效。当前主目标仍是项目中的 MOTIS dP 标签，不等同于独立气压观测精度。
 
@@ -121,7 +121,7 @@ M5 的 `b` 与 4 个 `a` 用训练记录的旧中间参数和当前 dP 做普通
 4. M5 仅用这 184 条的真实参数与当前 dP 校准。
 5. 在 46 条上报告参数误差与完整组合误差。
 
-首版拟议训练超参：AdamW，LR `1e-3`、weight decay `1e-4`、batch 4、最多 120 epochs；参数验证归一化 MSE 控制 ReduceLROnPlateau（factor 0.5、patience 8）和早停（patience 20），梯度裁剪 1.0，seed 42。首版不开几何增强，避免还未验证的中心/掩码变换混入机制测试。
+实际训练超参：AdamW，LR `3e-4`、weight decay `1e-3`、batch 4、最多 120 epochs；验证 RMSE 控制 ReduceLROnPlateau（factor 0.5、patience 10）和早停（patience 25），梯度裁剪 1.0，seed 42。首版未开几何增强。最初拟议的 `lr=1e-3` 运行保留在 `dev_lr1e-3/` 作为协议修订证据。
 
 ### 6.3 最终主验证
 
@@ -176,7 +176,7 @@ M5 的 `b` 与 4 个 `a` 用训练记录的旧中间参数和当前 dP 做普通
 
 后续正式 E 训练必须启用 `torch.compile`，保留 BF16 和配置中的 activation checkpointing，禁止编译失败后静默回退 eager。首轮图编译/冷启动与稳态时间分别记录，单 E 与五 E 总推理成本分别测量；小参数量不等于低 FLOPs。
 
-拟议模型代码放 `src/h9dp/`、配置放 `configs/`、独立训练入口放 `scripts/`；本次未创建这些模型实现。正式运行、检查点、标签配对表、训练统计及原始日志放 `/mnt/data/H9dP/runs/m1/`，引用现有影像数组，不复制。源 CSV 与本次只读审计保留在 `/mnt/data/H9dP/reference/motis/260212/`。
+模型代码在 `src/h9dp/m1.py`，配置为 `configs/m1.yaml`，入口为 `scripts/m1.py`。正式运行、检查点、标签配对表、训练统计及原始日志放 `/mnt/data/H9dP/runs/m1/`，引用现有影像数组，不复制。源 CSV 与本次只读审计保留在 `/mnt/data/H9dP/reference/motis/260212/`。
 
 启动前检查根分区实际和预计使用量，始终低于 375 GB。使用普通用户及 `fy3-aivis-v1` 环境，不因启动训练本身额外请求权限。
 

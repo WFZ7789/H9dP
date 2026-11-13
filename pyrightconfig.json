@@ -1,0 +1,9 @@
+{
+  "include": ["src", "scripts", "tests"],
+  "extraPaths": ["src"],
+  "exclude": ["runs", "**/__pycache__"],
+  "executionEnvironments": [
+    {"root": "runs/source_before_rework", "extraPaths": ["runs/source_before_rework/src"]},
+    {"root": ".", "extraPaths": ["src"]}
+  ]
+}

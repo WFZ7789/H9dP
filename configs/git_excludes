@@ -1,0 +1,16 @@
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.cache/
+*.egg-info/
+.venv/
+/HIMAWARI_data/
+/HIMAWARI_dataset.7z
+/data/
+/cache/
+/runs/
+/outputs/
+/checkpoints/
+*.pt
+*.pth
+

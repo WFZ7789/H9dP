@@ -1,0 +1,29 @@
+# Python and tooling caches
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.ruff_cache/
+.cache/
+*.egg-info/
+.venv/
+venv/
+
+# Local data, archives and run artifacts (see AGENTS.md)
+/HIMAWARI_data/
+/HIMAWARI_dataset.7z
+/data/
+/cache/
+/runs/
+/outputs/
+/checkpoints/
+*.pt
+*.pth
+*.npz
+*.npy
+
+# Local environment and credentials
+.env
+.env.*
+.netrc
+.aws/
+.ssh/

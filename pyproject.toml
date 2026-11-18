@@ -7,6 +7,7 @@ name = "h9dp"
 version = "0.1.0"
 description = "Native-resolution Himawari sequence pressure-deficit estimation"
 requires-python = ">=3.11"
+license = {text = "0BSD"}
 dependencies = ["numpy>=2", "torch>=2.5", "PyYAML>=6"]
 
 [project.optional-dependencies]

@@ -1,5 +1,7 @@
 {
   "include": ["src", "scripts", "tests"],
+  "venvPath": "/home/debian/miniconda3/envs",
+  "venv": "fy3-aivis-v1",
   "extraPaths": ["src"],
   "exclude": ["runs", "**/__pycache__"],
   "executionEnvironments": [

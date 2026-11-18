@@ -1,0 +1,736 @@
+{
+  "schema_version": 1,
+  "description": "Planned JMA station observation queries; event names/year are tags, not measured pressure sources. No BST pressure labels. Manual event/date associations require contextual checking.",
+  "stations": {
+    "47512": {
+      "name": "大船渡",
+      "prefecture": 33
+    },
+    "47585": {
+      "name": "宮古",
+      "prefecture": 33
+    },
+    "47590": {
+      "name": "仙台",
+      "prefecture": 34
+    },
+    "47662": {
+      "name": "東京",
+      "prefecture": 44
+    },
+    "47666": {
+      "name": "石廊崎",
+      "prefecture": 50
+    },
+    "47670": {
+      "name": "横浜",
+      "prefecture": 46
+    },
+    "47672": {
+      "name": "館山",
+      "prefecture": 45
+    },
+    "47675": {
+      "name": "大島",
+      "prefecture": 44
+    },
+    "47677": {
+      "name": "三宅島",
+      "prefecture": 44
+    },
+    "47678": {
+      "name": "八丈島",
+      "prefecture": 44
+    },
+    "47682": {
+      "name": "千葉",
+      "prefecture": 45
+    },
+    "47765": {
+      "name": "広島",
+      "prefecture": 67
+    },
+    "47766": {
+      "name": "呉",
+      "prefecture": 67
+    },
+    "47770": {
+      "name": "神戸",
+      "prefecture": 63
+    },
+    "47772": {
+      "name": "大阪",
+      "prefecture": 62
+    },
+    "47777": {
+      "name": "和歌山",
+      "prefecture": 65
+    },
+    "47778": {
+      "name": "潮岬",
+      "prefecture": 65
+    },
+    "47827": {
+      "name": "鹿児島",
+      "prefecture": 88
+    },
+    "47830": {
+      "name": "宮崎",
+      "prefecture": 87
+    },
+    "47831": {
+      "name": "枕崎",
+      "prefecture": 88
+    },
+    "47836": {
+      "name": "屋久島",
+      "prefecture": 88
+    },
+    "47837": {
+      "name": "種子島",
+      "prefecture": 88
+    },
+    "47891": {
+      "name": "高松",
+      "prefecture": 72
+    },
+    "47893": {
+      "name": "高知",
+      "prefecture": 74
+    },
+    "47895": {
+      "name": "徳島",
+      "prefecture": 71
+    },
+    "47899": {
+      "name": "室戸岬",
+      "prefecture": 74
+    },
+    "47909": {
+      "name": "名瀬",
+      "prefecture": 88
+    },
+    "47912": {
+      "name": "与那国島",
+      "prefecture": 91
+    },
+    "47917": {
+      "name": "西表島",
+      "prefecture": 91
+    },
+    "47918": {
+      "name": "石垣島",
+      "prefecture": 91
+    },
+    "47927": {
+      "name": "宮古島",
+      "prefecture": 91
+    },
+    "47929": {
+      "name": "久米島",
+      "prefecture": 91
+    },
+    "47936": {
+      "name": "那覇",
+      "prefecture": 91
+    },
+    "47940": {
+      "name": "名護",
+      "prefecture": 91
+    },
+    "47942": {
+      "name": "沖永良部",
+      "prefecture": 88
+    },
+    "47945": {
+      "name": "南大東",
+      "prefecture": 91
+    },
+    "47971": {
+      "name": "父島",
+      "prefecture": 44
+    },
+    "47991": {
+      "name": "南鳥島",
+      "prefecture": 44
+    }
+  },
+  "events": [
+    {
+      "name": "Chan-hom",
+      "year": 2015,
+      "first_day_jst": "2015-07-10",
+      "last_day_jst": "2015-07-11",
+      "stations": [
+        "47927",
+        "47929",
+        "47936",
+        "47940",
+        "47918"
+      ]
+    },
+    {
+      "name": "Nangka",
+      "year": 2015,
+      "first_day_jst": "2015-07-16",
+      "last_day_jst": "2015-07-17",
+      "stations": [
+        "47899",
+        "47893",
+        "47778",
+        "47895",
+        "47777"
+      ]
+    },
+    {
+      "name": "Soudelor",
+      "year": 2015,
+      "first_day_jst": "2015-08-07",
+      "last_day_jst": "2015-08-08",
+      "stations": [
+        "47912",
+        "47918",
+        "47917"
+      ]
+    },
+    {
+      "name": "Goni",
+      "year": 2015,
+      "first_day_jst": "2015-08-23",
+      "last_day_jst": "2015-08-24",
+      "stations": [
+        "47918",
+        "47917",
+        "47927",
+        "47912"
+      ]
+    },
+    {
+      "name": "Dujuan",
+      "year": 2015,
+      "first_day_jst": "2015-09-28",
+      "last_day_jst": "2015-09-29",
+      "stations": [
+        "47912",
+        "47918",
+        "47917"
+      ]
+    },
+    {
+      "name": "Nepartak",
+      "year": 2016,
+      "first_day_jst": "2016-07-07",
+      "last_day_jst": "2016-07-08",
+      "stations": [
+        "47912",
+        "47918",
+        "47917"
+      ]
+    },
+    {
+      "name": "Mindulle",
+      "year": 2016,
+      "first_day_jst": "2016-08-21",
+      "last_day_jst": "2016-08-22",
+      "stations": [
+        "47678",
+        "47677",
+        "47675",
+        "47672",
+        "47662",
+        "47682"
+      ]
+    },
+    {
+      "name": "Lionrock",
+      "year": 2016,
+      "first_day_jst": "2016-08-29",
+      "last_day_jst": "2016-08-31",
+      "stations": [
+        "47678",
+        "47677",
+        "47512",
+        "47585",
+        "47590"
+      ]
+    },
+    {
+      "name": "Malakas",
+      "year": 2016,
+      "first_day_jst": "2016-09-17",
+      "last_day_jst": "2016-09-18",
+      "stations": [
+        "47912",
+        "47918",
+        "47917",
+        "47927"
+      ]
+    },
+    {
+      "name": "Megi",
+      "year": 2016,
+      "first_day_jst": "2016-09-26",
+      "last_day_jst": "2016-09-27",
+      "stations": [
+        "47912",
+        "47918",
+        "47917"
+      ]
+    },
+    {
+      "name": "Chaba",
+      "year": 2016,
+      "first_day_jst": "2016-10-03",
+      "last_day_jst": "2016-10-04",
+      "stations": [
+        "47929",
+        "47936",
+        "47940",
+        "47942",
+        "47909"
+      ]
+    },
+    {
+      "name": "Noru",
+      "year": 2017,
+      "first_day_jst": "2017-08-04",
+      "last_day_jst": "2017-08-08",
+      "stations": [
+        "47909",
+        "47836",
+        "47837",
+        "47827",
+        "47831",
+        "47778",
+        "47777"
+      ]
+    },
+    {
+      "name": "Talim",
+      "year": 2017,
+      "first_day_jst": "2017-09-13",
+      "last_day_jst": "2017-09-17",
+      "stations": [
+        "47927",
+        "47918",
+        "47936",
+        "47827",
+        "47831",
+        "47836",
+        "47899"
+      ]
+    },
+    {
+      "name": "Lan",
+      "year": 2017,
+      "first_day_jst": "2017-10-21",
+      "last_day_jst": "2017-10-23",
+      "stations": [
+        "47945",
+        "47909",
+        "47678",
+        "47677",
+        "47675",
+        "47666",
+        "47778",
+        "47672"
+      ]
+    },
+    {
+      "name": "Prapiroon",
+      "year": 2018,
+      "first_day_jst": "2018-07-01",
+      "last_day_jst": "2018-07-02",
+      "stations": [
+        "47929",
+        "47936",
+        "47940"
+      ]
+    },
+    {
+      "name": "Maria",
+      "year": 2018,
+      "first_day_jst": "2018-07-10",
+      "last_day_jst": "2018-07-11",
+      "stations": [
+        "47918",
+        "47917",
+        "47912",
+        "47927"
+      ]
+    },
+    {
+      "name": "Soulik",
+      "year": 2018,
+      "first_day_jst": "2018-08-21",
+      "last_day_jst": "2018-08-22",
+      "stations": [
+        "47929",
+        "47936",
+        "47940",
+        "47909"
+      ]
+    },
+    {
+      "name": "Cimaron",
+      "year": 2018,
+      "first_day_jst": "2018-08-23",
+      "last_day_jst": "2018-08-24",
+      "stations": [
+        "47778",
+        "47899",
+        "47777",
+        "47893",
+        "47895"
+      ]
+    },
+    {
+      "name": "Jebi",
+      "year": 2018,
+      "first_day_jst": "2018-09-04",
+      "last_day_jst": "2018-09-05",
+      "stations": [
+        "47899",
+        "47893",
+        "47778",
+        "47777",
+        "47770",
+        "47772",
+        "47895",
+        "47891"
+      ]
+    },
+    {
+      "name": "Trami",
+      "year": 2018,
+      "first_day_jst": "2018-09-28",
+      "last_day_jst": "2018-09-30",
+      "stations": [
+        "47945",
+        "47936",
+        "47929",
+        "47940",
+        "47909",
+        "47836",
+        "47827",
+        "47666",
+        "47678",
+        "47899"
+      ]
+    },
+    {
+      "name": "Kong-rey",
+      "year": 2018,
+      "first_day_jst": "2018-10-04",
+      "last_day_jst": "2018-10-06",
+      "stations": [
+        "47929",
+        "47936",
+        "47940",
+        "47909"
+      ]
+    },
+    {
+      "name": "Lekima",
+      "year": 2019,
+      "first_day_jst": "2019-08-08",
+      "last_day_jst": "2019-08-09",
+      "stations": [
+        "47927",
+        "47918",
+        "47917",
+        "47912"
+      ]
+    },
+    {
+      "name": "Krosa",
+      "year": 2019,
+      "first_day_jst": "2019-08-14",
+      "last_day_jst": "2019-08-16",
+      "stations": [
+        "47893",
+        "47899",
+        "47778",
+        "47765",
+        "47766"
+      ]
+    },
+    {
+      "name": "Faxai",
+      "year": 2019,
+      "first_day_jst": "2019-09-08",
+      "last_day_jst": "2019-09-09",
+      "stations": [
+        "47672",
+        "47682",
+        "47662",
+        "47670",
+        "47675",
+        "47666"
+      ]
+    },
+    {
+      "name": "Tapah",
+      "year": 2019,
+      "first_day_jst": "2019-09-21",
+      "last_day_jst": "2019-09-23",
+      "stations": [
+        "47929",
+        "47936",
+        "47940",
+        "47909"
+      ]
+    },
+    {
+      "name": "Hagibis",
+      "year": 2019,
+      "first_day_jst": "2019-10-11",
+      "last_day_jst": "2019-10-13",
+      "stations": [
+        "47678",
+        "47677",
+        "47675",
+        "47666",
+        "47672",
+        "47662",
+        "47682",
+        "47778"
+      ]
+    },
+    {
+      "name": "Bualoi",
+      "year": 2019,
+      "first_day_jst": "2019-10-24",
+      "last_day_jst": "2019-10-25",
+      "stations": [
+        "47971",
+        "47678",
+        "47677"
+      ]
+    },
+    {
+      "name": "Maysak",
+      "year": 2020,
+      "first_day_jst": "2020-09-01",
+      "last_day_jst": "2020-09-03",
+      "stations": [
+        "47929",
+        "47936",
+        "47940",
+        "47909",
+        "47827",
+        "47831"
+      ]
+    },
+    {
+      "name": "Haishen",
+      "year": 2020,
+      "first_day_jst": "2020-09-05",
+      "last_day_jst": "2020-09-07",
+      "stations": [
+        "47945",
+        "47909",
+        "47942",
+        "47836",
+        "47837",
+        "47827",
+        "47831",
+        "47936",
+        "47940"
+      ]
+    },
+    {
+      "name": "In-fa",
+      "year": 2021,
+      "first_day_jst": "2021-07-23",
+      "last_day_jst": "2021-07-25",
+      "stations": [
+        "47927",
+        "47918",
+        "47912",
+        "47917",
+        "47929"
+      ]
+    },
+    {
+      "name": "Chanthu",
+      "year": 2021,
+      "first_day_jst": "2021-09-12",
+      "last_day_jst": "2021-09-13",
+      "stations": [
+        "47927",
+        "47918",
+        "47912",
+        "47917"
+      ]
+    },
+    {
+      "name": "Mindulle",
+      "year": 2021,
+      "first_day_jst": "2021-09-30",
+      "last_day_jst": "2021-10-01",
+      "stations": [
+        "47678",
+        "47677",
+        "47971",
+        "47945"
+      ]
+    },
+    {
+      "name": "Hinnamnor",
+      "year": 2022,
+      "first_day_jst": "2022-09-03",
+      "last_day_jst": "2022-09-05",
+      "stations": [
+        "47918",
+        "47912",
+        "47917",
+        "47929",
+        "47936",
+        "47940",
+        "47927"
+      ]
+    },
+    {
+      "name": "Muifa",
+      "year": 2022,
+      "first_day_jst": "2022-09-11",
+      "last_day_jst": "2022-09-13",
+      "stations": [
+        "47918",
+        "47917",
+        "47912",
+        "47927"
+      ]
+    },
+    {
+      "name": "Nanmadol",
+      "year": 2022,
+      "first_day_jst": "2022-09-17",
+      "last_day_jst": "2022-09-19",
+      "stations": [
+        "47909",
+        "47827",
+        "47831",
+        "47836",
+        "47837",
+        "47830",
+        "47936",
+        "47940"
+      ]
+    },
+    {
+      "name": "Mawar",
+      "year": 2023,
+      "first_day_jst": "2023-06-01",
+      "last_day_jst": "2023-06-02",
+      "stations": [
+        "47936",
+        "47929",
+        "47940",
+        "47927",
+        "47945"
+      ]
+    },
+    {
+      "name": "Khanun",
+      "year": 2023,
+      "first_day_jst": "2023-08-01",
+      "last_day_jst": "2023-08-03",
+      "stations": [
+        "47936",
+        "47929",
+        "47940",
+        "47927",
+        "47909"
+      ]
+    },
+    {
+      "name": "Khanun",
+      "year": 2023,
+      "first_day_jst": "2023-08-05",
+      "last_day_jst": "2023-08-07",
+      "stations": [
+        "47936",
+        "47929",
+        "47940",
+        "47909"
+      ]
+    },
+    {
+      "name": "Lan",
+      "year": 2023,
+      "first_day_jst": "2023-08-14",
+      "last_day_jst": "2023-08-16",
+      "stations": [
+        "47778",
+        "47899",
+        "47777",
+        "47895",
+        "47772",
+        "47770"
+      ]
+    },
+    {
+      "name": "Shanshan",
+      "year": 2024,
+      "first_day_jst": "2024-08-27",
+      "last_day_jst": "2024-08-30",
+      "stations": [
+        "47909",
+        "47827",
+        "47831",
+        "47836",
+        "47837",
+        "47830"
+      ]
+    },
+    {
+      "name": "Kong-rey",
+      "year": 2024,
+      "first_day_jst": "2024-10-30",
+      "last_day_jst": "2024-10-31",
+      "stations": [
+        "47912",
+        "47918",
+        "47917"
+      ]
+    },
+    {
+      "name": "Nari",
+      "year": 2025,
+      "first_day_jst": "2025-07-14",
+      "last_day_jst": "2025-07-15",
+      "stations": [
+        "47678",
+        "47677",
+        "47971"
+      ]
+    },
+    {
+      "name": "Podul",
+      "year": 2025,
+      "first_day_jst": "2025-08-13",
+      "last_day_jst": "2025-08-14",
+      "stations": [
+        "47912",
+        "47918",
+        "47927"
+      ]
+    },
+    {
+      "name": "Kajiki",
+      "year": 2025,
+      "first_day_jst": "2025-08-23",
+      "last_day_jst": "2025-08-25",
+      "stations": [
+        "47909",
+        "47827",
+        "47831",
+        "47836",
+        "47837",
+        "47830"
+      ]
+    }
+  ]
+}

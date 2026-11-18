@@ -1,0 +1,150 @@
+{
+  "schema_version": 1,
+  "description": "Curated JMA/MRI T-PARCII aircraft and dropsonde pressure values. Every numeric pressure is an aircraft/dropsonde-derived measurement or estimate, never a best-track central pressure. Records with pressure_hpa=null document missions whose numeric value was not found in an accessible publication; they are not filled from best track.",
+  "records": [
+    {
+      "season": 2017,
+      "storm_name": "LAN",
+      "observation_time_utc": "2017-10-21T07:00:00Z",
+      "time_precision": "hour; published JST 16:00 converted to UTC",
+      "pressure_hpa": 925.0,
+      "pressure_definition": "minimum sea-level pressure estimated from inner-core dropsondes",
+      "source_kind": "official joint press release (Ryukyus Univ., Nagoya Univ., MRI/JMA, JAMSTEC)",
+      "source_url": "https://www.u-ryukyu.ac.jp/news/509/",
+      "source_title": "2017年台風第21号の航空機観測を用いた強度解析と予測実験",
+      "raw_profile_acquired": true,
+      "pressure_is_best_track": false,
+      "note": "Quality-controlled aircraft value after the official best-track release; the release compares it with the then-published best-track value, which is deliberately not copied here."
+    },
+    {
+      "season": 2017,
+      "storm_name": "LAN",
+      "observation_time_utc": "2017-10-22T01:00:00Z",
+      "time_precision": "hour; published JST 10:00 converted to UTC",
+      "pressure_hpa": 930.0,
+      "pressure_definition": "minimum sea-level pressure estimated from inner-core dropsondes",
+      "pressure_approximate": true,
+      "source_kind": "official joint press release (Ryukyus Univ., Nagoya Univ., MRI/JMA, JAMSTEC)",
+      "source_url": "https://www.u-ryukyu.ac.jp/news/509/",
+      "source_title": "2017年台風第21号の航空機観測を用いた強度解析と予測実験",
+      "raw_profile_acquired": true,
+      "pressure_is_best_track": false,
+      "note": "The release states approximately 930 hPa."
+    },
+    {
+      "season": 2017,
+      "storm_name": "LAN",
+      "observation_time_utc": "2017-10-21T06:00:00Z",
+      "time_precision": "campaign window, not a single sonde time",
+      "pressure_hpa": 926.0,
+      "pressure_definition": "aircraft-derived central pressure reported in a later conference analysis",
+      "source_kind": "conference abstract",
+      "source_url": "https://confit.atlas.jp/guide/event-img/jpgu2020/U18-05/public/pdf?type=in",
+      "source_title": "Typhoon observations using an aircraft from the upper troposphere in the T-PARCII project (JpGU 2020)",
+      "raw_profile_acquired": true,
+      "pressure_is_best_track": false,
+      "variant_of": "925 hPa value in the 2018 joint release",
+      "note": "Retained as a separate published version (926 hPa for 21 Oct), not silently reconciled with 925 hPa."
+    },
+    {
+      "season": 2017,
+      "storm_name": "LAN",
+      "observation_time_utc": "2017-10-22T01:00:00Z",
+      "time_precision": "campaign window, not a single sonde time",
+      "pressure_hpa": 928.0,
+      "pressure_definition": "aircraft-derived central pressure reported in a later conference analysis",
+      "source_kind": "conference abstract",
+      "source_url": "https://confit.atlas.jp/guide/event-img/jpgu2020/U18-05/public/pdf?type=in",
+      "source_title": "Typhoon observations using an aircraft from the upper troposphere in the T-PARCII project (JpGU 2020)",
+      "raw_profile_acquired": true,
+      "pressure_is_best_track": false,
+      "variant_of": "930 hPa value in the 2018 joint release",
+      "note": "Retained as a separate published version (928 hPa for 22 Oct), not silently reconciled with 930 hPa."
+    },
+    {
+      "season": 2018,
+      "storm_name": "TRAMI",
+      "observation_time_utc": null,
+      "time_precision": "campaign minimum, exact time not published",
+      "campaign_window_utc": [
+        "2018-09-25T00:00:00Z",
+        "2018-09-28T23:59:59Z"
+      ],
+      "pressure_hpa": 920.0,
+      "pressure_definition": "estimated minimum sea-level pressure from T-PARCII inner-core dropsondes",
+      "source_kind": "ECMWF workshop contribution",
+      "source_url": "https://events.ecmwf.int/event/118/contributions/495/contribution.pdf",
+      "source_title": "Analysis and forecast using dropsonde data from inner-core region of tropical cyclones obtained during the aircraft missions of T-PARCII",
+      "raw_profile_acquired": false,
+      "pressure_is_best_track": false,
+      "note": "The only public numeric value found for the Trami mission; no native dropsonde pressure profiles were located."
+    },
+    {
+      "season": 2025,
+      "storm_name": "NEOGURI",
+      "observation_time_utc": null,
+      "date_utc": "2025-09-21",
+      "time_precision": "day; exact dropsonde time not in the abstract",
+      "pressure_hpa": 930.0,
+      "pressure_definition": "sea-surface central pressure measured by dropsonde",
+      "source_kind": "conference abstract",
+      "source_url": "http://www.rain.hyarc.nagoya-u.ac.jp/~tsuboki/isee_sympo2025/src/abstracts/Tsujino.html",
+      "source_title": "Preliminary Results of Two-day Consecutive Aircraft Observations in Typhoon Neoguri (2025)",
+      "raw_profile_acquired": false,
+      "pressure_is_best_track": false,
+      "note": "Mature-stage value on 21 Sep; a later SOLA 2026 report gives about 935 hPa for the second day."
+    },
+    {
+      "season": 2025,
+      "storm_name": "NEOGURI",
+      "observation_time_utc": null,
+      "date_utc": "2025-09-22",
+      "time_precision": "day; exact dropsonde time not in the abstract",
+      "pressure_hpa": 935.0,
+      "pressure_definition": "sea-surface central pressure measured by dropsonde",
+      "source_kind": "conference abstract / peer-reviewed report",
+      "source_url": "http://www.rain.hyarc.nagoya-u.ac.jp/~tsuboki/isee_sympo2025/src/abstracts/Tsujino.html",
+      "source_title": "Preliminary Results of Two-day Consecutive Aircraft Observations in Typhoon Neoguri (2025)",
+      "raw_profile_acquired": false,
+      "pressure_is_best_track": false,
+      "note": "Weakening-stage value on 22 Sep."
+    },
+    {
+      "season": 2025,
+      "storm_name": "HALONG",
+      "observation_time_utc": "2025-10-07T06:20:00Z",
+      "time_precision": "minute, as posted",
+      "pressure_hpa": 959.0,
+      "pressure_definition": "lowest surface pressure reported in a JMA TEMP_DROP dropsonde message",
+      "source_kind": "non-official forum post reproducing official JMA WIS TEMP_DROP data",
+      "source_url": "https://disp.cc/ptt/TY_Research/1evC4awx",
+      "source_title": "PTT TY_Research post (disp.cc mirror) with JMA TEMP_DROP screenshots: 963 -> 960 -> 959 hPa",
+      "raw_profile_acquired": false,
+      "pressure_is_best_track": false,
+      "note": "Original PTT thread M.1759822116.A.EBB, mirrored at disp.cc; twtybbs also reports a minimum of 959.0 hPa. Official JMA WIS TEMP_DROP directory currently retains no 2025 files, so the raw message could not be re-downloaded; value is retained only with this explicit non-official-forum provenance, not as an official archive copy.",
+      "secondary_source_urls": [
+        "https://twtybbs.com/thread-24015-4-2.html"
+      ]
+    }
+  ],
+  "missions_without_public_numeric_pressure": [
+    {
+      "season": 2020,
+      "storm_name": "HAISHEN",
+      "source_url": "https://doi.org/10.1029/2023JD040585",
+      "note": "T-PARCII dropsonde mission documented; numeric central pressure not found in accessible text (figure only). No best-track value substituted."
+    },
+    {
+      "season": 2021,
+      "storm_name": "MINDULLE",
+      "source_url": "https://confit.atlas.jp/guide/event-img/jpgu2022/ACG41-06/public/pdf?type=in",
+      "note": "T-PARCII warm-core mission documented; measured central pressure is discussed but no numeric value was found in accessible text. No best-track value substituted."
+    },
+    {
+      "season": 2024,
+      "storm_name": "BARIJAT",
+      "source_url": "https://confit.atlas.jp/guide/event-img/jpgu2025/ACG54-06/public/pdf?type=in",
+      "note": "T-PARCII dropsonde data were distributed on GTS; numeric central pressure not found in accessible text. No best-track value substituted."
+    }
+  ]
+}

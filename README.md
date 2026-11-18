@@ -4,7 +4,9 @@
 
 以六帧 HIMAWARI B08/B09/B10/B16 原分辨率影像估计 MOTIS dP。输入固定为 `[B,6,4,500,500]`，输出为 `[B]`，单位 hPa。直接读取 HSD 并定标，禁止使用 Satpy。原始归档与原始数据保留。
 
-默认配置仍为 v2：六帧联合输入，2×2 像元重排为 250×250，随后 16 个卷积残差块始终保持 250×250 特征图，最后读出一个标量。不使用粗统计网格或提前的空间汇聚。实现说明见 [TRAINING_PLAN.md](docs/v2/TRAINING_PLAN.md)，配置见 [configs/train.yaml](configs/train.yaml)。
+**当前研发路线是 R1 多尺度亮温结构与谱高斯过程**：复用 546 条记录做记录级 5 折开发 OOF，不永久封存验证集；眼区追踪仅在图像侧进行，不使用压力标签。最佳已观察 Good OOF RMSE 为 **7.61 hPa**，全体 **9.23 hPa**，未达 < 5.9 hPa，当前暂停。协议见 [R1 模型入口](docs/R1/README.md)，实际数字与限制见 [2026-11-18 开发结果](docs/R1/RESULTS_20261118.md)。上一阶段 M1 新数据分段调整的最佳 Good 开发 RMSE 为 11.998 hPa，见 [M1 调整记录](docs/M1/ADAPT_RESULTS_20261114.md)。以下 v2/P3/T1A 段落和旧命令保留作历史入口。
+
+命令行默认配置仍为历史 v2：六帧联合输入，2×2 像元重排为 250×250，随后 16 个卷积残差块始终保持 250×250 特征图，最后读出一个标量。不使用粗统计网格或提前的空间汇聚。实现说明见 [TRAINING_PLAN.md](docs/v2/TRAINING_PLAN.md)，配置见 [configs/train.yaml](configs/train.yaml)。
 
 新增 **P3 initial minimal**：无前置空间编码器的动态分辨率读取 Transformer，完整模型 **108,551 个可训练参数，硬限制 <155,000**。16 个查询联合读取原生像元、动态尺度观测和环境背景；保留亮温数值旁路，直接输出 dP。独立配置见 [configs/p3_minimal.yaml](configs/p3_minimal.yaml)，结构、限制和验证命令见 [P3_MINIMAL.md](docs/P3/P3_MINIMAL.md)。复用原有数据及逐记录目标，不覆盖旧模型或检查点。P3 已完成首轮正式训练：第 40 轮早停，第 20 轮验证最佳 RMSE 为 15.069 hPa，明显弱于 v2 的 10.963 hPa，当前保留为失败基线。实现、训练结果、只读消融与后续建议见 [P3 工作报告](docs/P3/P3_WORK_REPORT.md)。
 
@@ -14,7 +16,7 @@
 
 **M1（MOTIS 参数小专家）测试阶段已完成，未达组合目标**：五个独立小网络分别预测 B24 暖异常、B36 暖异常、Eye size、B33 修正量和 CDO 温度，共 86,425 参数，再由线性 M5 组合。最终 49 条验证 RMSE 为 **14.565 hPa**，优于训练均值基线 20.487，但未优于同协议、同预算的直接回归对照 **12.947 hPa**。参数专家均优于常数基线，线性组合放大了参数误差。设计、审计与结果见 [M1 文档](docs/M1/README.md)。
 
-## 记录独立与等权
+## 历史默认 v2 协议：记录独立与等权
 
 - 唯一样本身份是 `record`。同一气旋的不同记录分别处理；气旋名称只作为输出元数据，不参与采样、权重、划分或归一化决策。
 - 训练每轮对全部训练记录随机打乱、无放回遍历，每条恰好一次。
@@ -76,8 +78,12 @@ runs/
   storage_migration.json
 ```
 
-Git 忽略规则源文件为 [configs/git_excludes](configs/git_excludes)，当前工作区规则保存在 `.git/info/exclude`，数据、runs、检查点和字节码不进入 Git。
+Git 忽略规则为 [.gitignore](.gitignore)（历史副本见 [configs/git_excludes](configs/git_excludes)），本地 `.git/info/exclude` 另行保留本机规则；数据、runs、检查点、数组和字节码不进入 Git。
 
 历史正式运行保留在 `/mnt/data/H9dP/runs/cnn_transformer_20261024T232842793115Z/`，第 40 轮结束、最佳第 10 轮。历史文件中的原运行路径属于当时的记录，目录更名映射保存在 `runs/storage_migration.json`。
 
 当前 v2 实现已完成代码重构、逐记录数据准备，并已验证 BF16 与 `torch.compile` 的真实数据训练路径；正式预测精度仍以完整训练结果为准。
+
+## License
+
+本仓库以 **BSD Zero Clause License（0BSD）** 发布，见 [LICENSE](LICENSE)。原始数据、归档、检查点和运行产物不随仓库分发；引用外部数据时仍须遵守其原始来源条款。

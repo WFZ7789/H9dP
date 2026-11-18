@@ -8,13 +8,13 @@ import hashlib
 import math
 import struct
 from dataclasses import dataclass
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
 import numpy as np
 
 BANDS = (8, 9, 10, 16)
-MJD_EPOCH = datetime(1858, 11, 17, tzinfo=timezone.utc)
+MJD_EPOCH = datetime(1858, 11, 17, tzinfo=UTC)
 
 
 @dataclass(frozen=True)

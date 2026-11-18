@@ -83,7 +83,8 @@ def two_ints(values) -> tuple[int, int]:
 
 
 def record_arrays(
-    sample: dict, image: np.ndarray, mask: np.ndarray, radii: tuple[int, int]
+    sample: dict, image: np.ndarray, mask: np.ndarray, radii: tuple[int, int],
+    *, allow_missing: bool = False,
 ) -> tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
     """Quantize one record and compute native region statistics.
 
@@ -104,6 +105,8 @@ def record_arrays(
     for frame in range(frames):
         valid = mask[frame, 0]
         if not valid.any():
+            if allow_missing:
+                continue
             raise ValueError("Frame has no valid pixels")
         region = region_map(np.asarray(sample["centers"][frame], dtype=np.float32), height, radii)
         for index in range(3):
@@ -172,7 +175,7 @@ def prepare(config: dict) -> dict:
             unpacked = np.unpackbits(
                 packed, axis=-1, count=250000, bitorder="little"
             ).reshape(frames_total, 4, 500, 500).astype(bool)
-            mask = unpacked.all(axis=1, keepdims=True)
+            mask = np.asarray(unpacked.all(axis=1, keepdims=True), dtype=np.bool_)
             quantized, region_numeric, region_coverage, stats = record_arrays(
                 sample, image, mask, radii
             )
@@ -590,6 +593,7 @@ def run_dev(config: dict) -> dict:
     for position, spec in enumerate(EXPERTS):
         column = PARAMETER_NAMES.index(spec.parameter)
         target_mean, target_std = target_statistics(meta, train_idx, column)
+        seed_everything(int(config["training"]["seed"]) + position)
         model = build_expert(spec, config, mean, std, target_mean, target_std, device)
         history = train_model(
             model,
@@ -632,6 +636,7 @@ def run_dev(config: dict) -> dict:
         }
         predictions[spec.name] = holdout
         histories[spec.name] = history
+    seed_everything(int(config["training"]["seed"]) + 10)
     direct = build_control(config, mean, std, dp_mean, dp_std, device)
     control_history = train_model(
         direct,
@@ -736,6 +741,7 @@ def run_final(config: dict) -> dict:
         target_mean, target_std = target_statistics(train_meta, train_idx, column)
         epochs = max(1, int(dev_metrics["experts"][spec.name]["best_epoch"]))
         result["dev_best_epochs"][spec.name] = epochs
+        seed_everything(int(config["training"]["seed"]) + position)
         model = build_expert(spec, config, mean, std, target_mean, target_std, device)
         history = train_model(
             model,
@@ -764,6 +770,7 @@ def run_final(config: dict) -> dict:
             "target_std": target_std,
             "checkpoint": str(output / f"{spec.name}_checkpoint.pt"),
         }
+    seed_everything(int(config["training"]["seed"]) + 10)
     direct = build_control(config, mean, std, dp_mean, dp_std, device)
     epochs = max(1, int(dev_metrics["control"]["best_epoch"]))
     result["dev_best_epochs"]["control"] = epochs

@@ -129,7 +129,9 @@ class M1Encoder(nn.Module):
         features = self.blocks(features)
         features = features.reshape(batch, frames, -1, self.output_size, self.output_size)
         region = self._region_features(features, mask, centers)
-        normalized = (numeric - mean) / std
+        # Zero placeholders for missing regions are not measurements in Kelvin.
+        present = coverage[:, :, None, :, None] > 0
+        normalized = torch.where(present, (numeric - mean) / std, 0.0)
         fraction = coverage.to(images.dtype) / float(self.image_size ** 2)
         combined = torch.cat(
             [region.reshape(batch, frames, -1), normalized.reshape(batch, frames, -1), fraction],

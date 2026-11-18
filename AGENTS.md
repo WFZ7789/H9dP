@@ -51,6 +51,22 @@ configured. Model-specific commands and actual results belong in `docs/`.
 For C++ components, document the selected compiler and build system before
 requiring their commands.
 
+## Network Operations
+
+Before any operation that can reach the network (data downloads, dependency
+installation, dataset or checkpoint fetches), unset every environment variable
+whose name contains `PROXY` in any case. Never run such an operation with a
+proxy configured.
+
+```bash
+for name in $(env | cut -d= -f1 | grep -i proxy); do unset "$name"; done
+```
+
+Apply the same rule to scripts and subprocesses: do not pass proxy variables
+through to child processes, for example by launching them with explicit
+`env -u HTTP_PROXY -u HTTPS_PROXY -u http_proxy -u https_proxy -u ALL_PROXY`.
+Record the unset step in the run record so the network path stays reproducible.
+
 ## Coding Style & Naming Conventions
 
 Use four-space indentation in Python, `snake_case` for modules and functions,
@@ -58,6 +74,60 @@ Use four-space indentation in Python, `snake_case` for modules and functions,
 performance-critical components when justified by profiling. Keep interfaces
 between Python and C++ explicit. No formatter or linter is configured; record
 new tooling and its invocation when introduced. Satpy is FORBIDDEN.
+
+## Permanent Observation/Test-Set Policy
+
+**This is a permanent, project-wide rule for current and future collection,
+validation, testing, and reporting, not an exception for one experiment.**
+
+- **真实的泛化能力，最终交给未来的独立观测和长期业务运行来检验。**
+  Future independent observations and long-term operational use are the ultimate
+  test of real generalization; do not impose cyclone independence on the current
+  observed/test set as a substitute for that future evidence.
+- **任何气旋（包括训练集、验证集、测试集中的气旋）均可被纳入实测集（测试集）。**
+  Cyclone identity and year are metadata tags of equal standing, not grouping,
+  exclusion, quota, or split-binding units. Their presence in another set does
+  not make an observation ineligible or invalidate its observed-set result.
+- **气旋名称、与训练记录不超过 6 h 的时间间隔，不构成任何影响。**
+  Do not reject, downweight, cap, bind splits, or discount records/results because
+  they share a cyclone name or are within six hours of training records. This
+  includes exact named-time matches, which are recorded as metadata, not an
+  automatic exclusion. Do not introduce a different time buffer instead.
+- Select and evaluate at the observation/record level. Do not introduce
+  cyclone-held-out collection, per-cyclone quotas, cyclone-balanced sampling, or
+  mandatory within-cyclone spacing unless the user explicitly changes this policy.
+  Only deduplicate actual repeated copies of an observation within the collected
+  set; distinct observations are not duplicates merely because they share a
+  cyclone, hour, or proximity to a training/validation/test record.
+- Report the actual observation source, protocol, and metrics. Do not call an
+  observed-set result invalid merely because of cyclone overlap or <=6 h training
+  proximity; do not claim it already proves future operational generalization.
+- Preserve immutable historical run protocols, results, and snapshots. Older
+  cyclone-grouped/time-isolated protocols describe historical work and do not
+  override this permanent rule for future work.
+
+### Current Useful-Pressure Collection Target
+
+The current collection target is **dP > 30 hPa**. Weak-pressure rows do not count
+as the requested useful set. Surface-station proxy pressure deficits must not be
+presented as verified cyclone-central-pressure observations. This target is
+separate from the permanent eligibility policy above.
+
+**JMA observations include actual aircraft/dropsonde, station/surface, marine
+measurements and observation reports, NOT JMA BST.** Include observations JMA
+publishes, receives, or obtains through collaborations; do not restrict searches
+to ground-station tables or confuse agency ownership with observation provenance.
+For aircraft sources, preserve pressure type, measurement altitude, provider,
+original time precision and quality. Flight-level pressure is not sea-level or
+cyclone-central pressure. Distinguish native records, published observational
+estimates, and ancillary files without pressure; do not inflate their counts. Never use JMA BST or other best-track central-pressure
+analyses as measured-pressure labels, truth, or substitutes to fill an observed
+sample quota. Preserve original measured station pressure, published sea-level
+pressure, quality flags, and observation times (JST must be converted to UTC).
+The previously approved IBTrACS USA_POCI and MOTIS/ERA5 POCI remain separately
+labelled environmental fields only; they must never generate or replace an
+observed pressure. Published adopted/interpolated labels are not raw measurements
+unless their original observation provenance is actually retrieved.
 
 ## Testing Guidelines
 

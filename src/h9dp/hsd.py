@@ -152,6 +152,28 @@ def lonlat_to_pixel(header: Header, latitude: float, longitude: float) -> tuple[
     return coff + x * cfac / 65536 - 1, loff + y * lfac / 65536 - header.segment_first_line
 
 
+def pixel_latitude(header: Header, column: np.ndarray, row: np.ndarray) -> np.ndarray:
+    """Geodetic latitude (degrees) at broadcastable zero-based local pixel centers.
+
+    The coordinates may be fractional. Rays that miss the Earth return NaN.
+    This uses the nominal HSD projection, like ``lonlat_to_pixel`` and ``earth_mask``.
+    """
+    _, cfac, lfac, coff, loff, distance, req, rpol = header.projection
+    x = np.deg2rad((np.asarray(column, dtype=np.float64) + 1 - coff) * 65536 / cfac)
+    y = np.deg2rad((np.asarray(row, dtype=np.float64) + header.segment_first_line - loff) * 65536 / lfac)
+    cos_y, sin_y = np.cos(y), np.sin(y)
+    ratio = (req / rpol) ** 2
+    toward_earth = np.cos(x) * cos_y
+    coefficient = cos_y ** 2 + ratio * sin_y ** 2
+    discriminant = (distance * toward_earth) ** 2 - coefficient * (distance**2 - req**2)
+    line = (distance * toward_earth - np.sqrt(np.maximum(discriminant, 0))) / coefficient
+    s1 = distance - line * toward_earth
+    s2 = line * np.sin(x) * cos_y
+    s3 = -line * sin_y
+    latitude = np.rad2deg(np.arctan2(ratio * s3, np.hypot(s1, s2)))
+    return np.where((discriminant >= 0) & (line > 0), latitude, np.nan)
+
+
 def crop_window(header: Header, latitude: float, longitude: float, size: int = 500) -> tuple[int, int]:
     col, row = lonlat_to_pixel(header, latitude, longitude)
     if header.width < size or header.height < size:

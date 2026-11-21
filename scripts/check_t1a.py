@@ -70,7 +70,7 @@ def fit_mechanism(kind, steps, device, tolerance):
 
     from h9dp.t1a import T1APressureRegressor
 
-    torch.manual_seed(101 if kind == "spatial" else 102)
+    torch.manual_seed(1)
     model = T1APressureRegressor({
         "widths": [8, 12, 16, 24], "blocks_per_stage": 1, "head_width": 24,
         "activation_checkpointing": False,
@@ -131,7 +131,7 @@ def main():
     if args.device == "cuda" and args.bf16 and not torch.cuda.is_bf16_supported():
         raise RuntimeError("CUDA BF16 unavailable")
     torch.set_num_threads(2)
-    torch.manual_seed(42)
+    torch.manual_seed(1)
     device = torch.device(args.device)
     model = build_model(config["model"]).to(device)
     model.train(args.backward)
@@ -175,7 +175,7 @@ def main():
         "synthetic_only": True, "architecture": ARCHITECTURE,
         "parameters": sum(p.numel() for p in model.parameters()), "device": str(device),
         "gpu": torch.cuda.get_device_name(device) if device.type == "cuda" else None,
-        "torch": torch.__version__, "seed": 42,
+        "torch": torch.__version__, "seed": 1,
         "bf16_autocast": args.bf16, "input_shape": list(images.shape),
         "output_shape": list(prediction.shape), "finite_output": True,
         "prediction_hpa_untrained": prediction.detach().cpu().tolist(), "spatial_shapes": shapes,

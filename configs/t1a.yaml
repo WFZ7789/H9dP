@@ -2,13 +2,13 @@ data:
   manifest: HIMAWARI_data/manifest.csv
   records: HIMAWARI_data/records.csv
   labels: MOTIS_cyclone_records.json
-  cache_dir: runs/h9dp/native500_v2
-  reuse_cache: runs/h9dp/native500_v1
+  cache_dir: runs/h9dp/native500_v2_seed1
+  reuse_cache: runs/h9dp/native500_v2
   crop_size: 500
   first_training_year: 2020
   validation_year: 2026
   validation_fraction: 0.5
-  split_seed: 42
+  split_seed: 1
 output_dir: /mnt/data/H9dP/runs/t1a
 model:
   architecture: t1a/v1
@@ -19,7 +19,7 @@ model:
   tail_fraction: 0.1
   activation_checkpointing: true
 training:
-  seed: 42
+  seed: 1
   epochs: 100
   early_stopping_patience: 20
   learning_rate: 0.0003

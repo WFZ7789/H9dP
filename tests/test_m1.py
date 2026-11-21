@@ -129,7 +129,7 @@ def test_record_arrays_quantize_and_exclude_invalid_pixels():
 
 
 def test_m5_recovers_known_linear_mapping():
-    rng = np.random.default_rng(42)
+    rng = np.random.default_rng(1)
     parameters = rng.normal(size=(200, 5)) * np.array([4.0, 4.0, 0.1, 5.0, 10.0]) + np.array([3.0, 3.0, 0.2, 5.0, -65.0])
     coefficients = np.array([12.8, 3.4313, 5.6742, 61.6813, 2.5781])
     scale = (35.0 - np.minimum(parameters[:, 4], -50.0)) / 100.0

@@ -59,7 +59,7 @@ def main() -> None:
     parser.add_argument("--track-csv", type=Path, required=True)
     parser.add_argument("--records", type=Path, default=Path("MOTIS_cyclone_records.json"))
     parser.add_argument("--count", type=int, default=100)
-    parser.add_argument("--seed", type=int, default=20261115)
+    parser.add_argument("--seed", type=int, default=1)
     parser.add_argument("--workers", type=int, default=8)
     args = parser.parse_args()
     if args.count <= 0 or args.workers <= 0:

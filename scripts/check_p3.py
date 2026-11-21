@@ -32,7 +32,7 @@ def main():
     if model_architecture(config["model"]) != ARCHITECTURE:
         raise ValueError("This synthetic check requires a P3 configuration")
     torch.set_num_threads(2)
-    torch.manual_seed(42)
+    torch.manual_seed(1)
     device = torch.device(args.device)
     model = build_model(config["model"]).to(device).eval()
     assert isinstance(model, P3PressureRegressor)

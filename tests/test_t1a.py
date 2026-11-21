@@ -30,7 +30,7 @@ def cpu_threads():
 
 
 def tiny_model(checkpointing=False):
-    torch.manual_seed(17)
+    torch.manual_seed(1)
     return T1APressureRegressor({
         "widths": [4, 6, 8, 12], "blocks_per_stage": 1, "head_width": 8,
         "activation_checkpointing": checkpointing,
@@ -38,7 +38,7 @@ def tiny_model(checkpointing=False):
 
 
 def inputs(height=32, width=32, batch=1):
-    images = torch.randn(batch, 6, 4, height, width, generator=torch.Generator().manual_seed(19))
+    images = torch.randn(batch, 6, 4, height, width, generator=torch.Generator().manual_seed(1))
     mask = torch.ones(batch, 6, 1, height, width, dtype=torch.bool)
     times = torch.tensor([[-300.2, -180.1, -60.2, -30.2, -10.2, 4.8]]).expand(batch, -1).clone()
     return images, times, mask

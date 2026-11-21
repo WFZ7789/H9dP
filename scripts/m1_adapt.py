@@ -2,8 +2,7 @@
 
 Use prepare once, then probe --epochs N repeatedly with an increasing N and
 one run directory. Each outer model evaluates storms absent from both its
-experts and calibrator. Inner OOF predictions train the calibrator. A new run
-can use another seed; reported development scores are NOT a blind test.
+experts and calibrator. Inner OOF predictions train the calibrator.
 """
 
 import argparse
@@ -253,8 +252,8 @@ def train_one(spec, indices, predict_indices, config, meta, directory, epochs, s
 
 def train_pack(indices, predict_indices, config, meta, directory, epochs, seed, device):
     return np.column_stack([
-        train_one(spec, indices, predict_indices, config, meta, directory, epochs, seed + j, device)
-        for j, spec in enumerate(EXPERTS)
+        train_one(spec, indices, predict_indices, config, meta, directory, epochs, seed, device)
+        for spec in EXPERTS
     ])
 
 
@@ -293,7 +292,7 @@ def probe(config: dict, directory: Path, epochs: int) -> dict:
         training = np.flatnonzero(folds != outer).tolist()
         evaluation = np.flatnonzero(folds == outer).tolist()
         subset = [records[i] for i in training]
-        inner_folds = grouped_folds(subset, int(config["crossfit"]["inner_folds"]), seed + 1000 + outer)
+        inner_folds = grouped_folds(subset, int(config["crossfit"]["inner_folds"]), seed)
         oof = np.full((len(training), 5), np.nan)
         for inner in range(int(config["crossfit"]["inner_folds"])):
             inner_train = [training[i] for i in np.flatnonzero(inner_folds != inner)]
@@ -301,9 +300,9 @@ def probe(config: dict, directory: Path, epochs: int) -> dict:
             inner_eval = [training[i] for i in local_eval]
             oof[local_eval] = train_pack(inner_train, inner_eval, config, meta,
                                          directory / f"outer{outer}" / f"inner{inner}", epochs,
-                                         seed + 100 * outer + 10 * inner, device)
+                                         seed, device)
         predicted = train_pack(training, evaluation, config, meta, directory / f"outer{outer}" / "base",
-                               epochs, seed + 100 * outer + 90, device)
+                               epochs, seed, device)
         paired = [i for i in training if records[i]["params"] is not None]
         teacher = M5.fit(np.asarray([records[i]["params"] for i in paired]), target[paired])
         calibration = CalibratedM5.fit(oof, target[training],

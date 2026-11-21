@@ -26,7 +26,7 @@ def main():
     parser.add_argument("--max-steps", type=int, default=500)
     parser.add_argument("--batch-size", type=int, default=6)
     parser.add_argument("--learning-rate", type=float, default=0.0003)
-    parser.add_argument("--seed", type=int, default=42)
+    parser.add_argument("--seed", type=int, default=1)
     parser.add_argument("--evaluate-every", type=int, default=10)
     parser.add_argument("--rmse-target", type=float, default=1.0)
     args = parser.parse_args()

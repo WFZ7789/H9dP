@@ -7,6 +7,8 @@ import math
 import torch
 from torch import nn
 
+LATITUDE_LOG_MASS = math.log(0.10)
+
 
 def group_weights(groups: int, indices: list[int], weights: list[float]) -> torch.Tensor:
     vector = torch.full((groups,), 0.08, dtype=torch.float64)
@@ -22,7 +24,7 @@ class SpectralGP(nn.Module):
     scale_prior: torch.Tensor
     mass_prior: torch.Tensor
 
-    def __init__(self, geometry_prior: torch.Tensor, scene_prior: torch.Tensor, local: bool):
+    def __init__(self, geometry_prior: torch.Tensor, scene_prior: torch.Tensor, local: bool, *, latitude: bool = False):
         super().__init__()
         self.register_buffer("geometry_prior", geometry_prior.log())
         self.register_buffer("scene_prior", scene_prior.log())
@@ -33,8 +35,11 @@ class SpectralGP(nn.Module):
         self.register_buffer("scale_prior", self.scales.detach().clone())
         self.masses = nn.Parameter(torch.tensor([0.0, -0.9, -0.8, -2.4], dtype=torch.float64))
         self.register_buffer("mass_prior", self.masses.detach().clone())
+        self.log_latitude_mass = (nn.Parameter(torch.tensor(LATITUDE_LOG_MASS, dtype=torch.float64))
+                                  if latitude else None)
 
-    def kernel(self, dot: torch.Tensor, distance: torch.Tensor, scene: torch.Tensor) -> torch.Tensor:
+    def kernel(self, dot: torch.Tensor, distance: torch.Tensor, scene: torch.Tensor,
+               latitude: torch.Tensor | None = None) -> torch.Tensor:
         # Each component is PSD; positive mixtures remain PSD at every step of hyperparameter fitting.
         geometry = (self.geometry_prior + self.geometry_delta).softmax(0)
         visual = (self.scene_prior + self.scene_delta).softmax(0)
@@ -44,8 +49,13 @@ class SpectralGP(nn.Module):
         sd = torch.einsum("g,gij->ij", visual, scene)
         line = torch.einsum("g,gij->ij", geometry, dot)
         smooth = torch.sqrt(3 * gd.clamp_min(1e-12) / p[0])
-        return (weight[0] * (1 + smooth) * (-smooth).exp() + weight[1] * line
-                + weight[2] * (-sd / (2 * p[1])).exp() + weight[3] * (-gd / (2 * p[2])).exp())
+        kernel = (weight[0] * (1 + smooth) * (-smooth).exp() + weight[1] * line
+                  + weight[2] * (-sd / (2 * p[1])).exp() + weight[3] * (-gd / (2 * p[2])).exp())
+        if self.log_latitude_mass is not None and latitude is not None:
+            return kernel + self.log_latitude_mass.clamp(-7, 5).exp() * latitude
+        if self.log_latitude_mass is not None or latitude is not None:
+            raise ValueError("Latitude kernel and model configuration must agree")
+        return kernel
 
     def system(self, kernel: torch.Tensor, quality: torch.Tensor) -> torch.Tensor:
         variance = self.scales[3:6].clamp(-8, 2).exp() + 0.003
@@ -53,8 +63,9 @@ class SpectralGP(nn.Module):
         return kernel + shared_mean + torch.diag(variance[quality])
 
     def forward(self, dot: torch.Tensor, distance: torch.Tensor, scene: torch.Tensor, y: torch.Tensor,
-                quality: torch.Tensor, importance: torch.Tensor, evidence: float) -> torch.Tensor:
-        kernel = self.kernel(dot, distance, scene)
+                quality: torch.Tensor, importance: torch.Tensor, evidence: float,
+                latitude: torch.Tensor | None = None) -> torch.Tensor:
+        kernel = self.kernel(dot, distance, scene, latitude)
         chol, _ = torch.linalg.cholesky_ex(self.system(kernel, quality), check_errors=False)
         inverse = torch.cholesky_inverse(chol)
         dual = inverse @ y
@@ -64,6 +75,8 @@ class SpectralGP(nn.Module):
         regularizer = (self.geometry_delta.square().mean() + self.scene_delta.square().mean()
                        + 0.2 * (self.scales - self.scale_prior).square().mean()
                        + 0.15 * (self.masses - self.mass_prior).square().mean())
+        if self.log_latitude_mass is not None:
+            regularizer = regularizer + 0.15 * (self.log_latitude_mass - LATITUDE_LOG_MASS).square()
         return (1 - evidence) * loo + evidence * nll + 0.012 * regularizer
 
     @torch.no_grad()

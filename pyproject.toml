@@ -12,6 +12,7 @@ dependencies = ["numpy>=2", "torch>=2.5", "PyYAML>=6"]
 
 [project.optional-dependencies]
 dev = ["pytest>=8"]
+polar = ["scipy"]
 
 [tool.setuptools.packages.find]
 where = ["src"]

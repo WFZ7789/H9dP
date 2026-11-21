@@ -29,7 +29,7 @@ def cpu_threads():
 
 
 def inputs(height=24, width=32, batch=1):
-    generator = torch.Generator().manual_seed(12)
+    generator = torch.Generator().manual_seed(1)
     images = torch.randn(batch, 6, 4, height, width, generator=generator)
     mask = torch.ones(batch, 6, 1, height, width, dtype=torch.bool)
     times = torch.tensor([[-300.2, -180.1, -60.2, -30.2, -10.2, -0.2]]).expand(batch, -1).clone()
@@ -154,7 +154,7 @@ def test_global_coverage_handles_fully_invalid_local_reads():
 
 
 def test_synthetic_backward_reaches_input_and_dynamic_router():
-    torch.manual_seed(13)
+    torch.manual_seed(1)
     model = P3PressureRegressor({}).eval()
     images, times, mask = inputs(batch=2)
     images.requires_grad_()
@@ -175,7 +175,7 @@ def test_synthetic_backward_reaches_input_and_dynamic_router():
 
 
 def test_dynamic_reads_are_content_conditioned_and_roundtrip():
-    torch.manual_seed(14)
+    torch.manual_seed(1)
     model = P3PressureRegressor({}).eval()
     images, times, mask = inputs()
     first, details = model.inspect_reads(images, times, mask)

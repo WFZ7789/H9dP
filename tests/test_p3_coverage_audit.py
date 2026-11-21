@@ -14,7 +14,7 @@ AUDIT = runpy.run_path(str(Path(__file__).resolve().parents[1] / "scripts/audit_
 
 @pytest.mark.parametrize("chunk", [1, 4, 30])
 def test_attention_entropy_matches_dense_with_empty_chunks(chunk):
-    torch.manual_seed(12)
+    torch.manual_seed(1)
     q, k = torch.randn(2, 2, 3, 4), torch.randn(2, 2, 17, 4)
     valid = torch.ones(2, 17, dtype=torch.bool)
     valid[0, :6] = False

@@ -1,5 +1,12 @@
 # Repository Guidelines
 
+## 首要永久规则：全项目只用种子 1
+
+根目录 [SEED](SEED) 记录项目随机种子，永久固定为 **1**。今后数据抽样、划分、
+训练、评估和随机诊断都使用这一个实验种子。一个种子跑出什么结果，就如实报告
+什么结果。全项目禁止多种子对照、挑选种子和跨种子平均。只有用户对具体任务
+作出明确的特殊说明时，才按其指定的范围例外执行。历史运行记录保留当时的实际种子。
+
 ## Project Structure & Module Organization
 
 Python modules live under `src/h9dp/`, tests under `tests/`, runnable utilities

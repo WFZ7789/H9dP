@@ -90,7 +90,7 @@ def main():
         raise ValueError("This geometry report assumes rotation/translation probabilities of 0.5")
     index = load_cache(config)
     device, environment = initialize_device(config)
-    seed_everything(42)
+    seed_everything(1)
     model = build_model(config["model"], index["target_normalization"]["mean_hpa"], index["target_normalization"]["std_hpa"]).to(device)
     parameters = sum(p.numel() for p in model.parameters())
     report = {

@@ -76,6 +76,10 @@ def load_cache(root: Path) -> Cache:
     rows = source["records"]
     with np.load(root / "features.npz", allow_pickle=False) as loaded:
         data = dict(loaded.items())
+    if "native_r3_index_sha256" in manifest:
+        # This cache uses only rows with native, uncropped R3 frames; preserve source order.
+        selected = set(data["record"])
+        rows = [row for row in rows if row["record"] in selected]
     if not np.array_equal([r["record"] for r in rows], data["record"]):
         raise ValueError("Feature order differs from source metadata")
     targets = np.array([r["dP"] for r in rows], dtype=np.float64)
@@ -155,7 +159,7 @@ def evaluate(cache: Cache, output: Path, seeds: list[int], folds: int, inner_fol
                 train = np.flatnonzero(assignment != fold)
                 held = np.flatnonzero(assignment == fold)
                 fold_pred, _, report = nested_predict(groups, cache.y, cache.quality, train, held,
-                                                       seed * 97 + fold, inner_folds)
+                                                       seed, inner_folds)
                 for tag, values in fold_pred.items():
                     predictions[tag][held] = values
                 for i in held:
@@ -179,7 +183,7 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--features", type=Path, required=True)
     parser.add_argument("--output", type=Path, required=True)
-    parser.add_argument("--seeds", type=int, nargs="+", default=[9463])
+    parser.add_argument("--seed", "--seeds", dest="seeds", type=int, nargs=1, default=[1])
     parser.add_argument("--folds", type=int, default=5)
     parser.add_argument("--inner-folds", type=int, default=3)
     args = parser.parse_args()

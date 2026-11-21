@@ -77,7 +77,7 @@ def test_memmap_mask_normalization_and_augmentation(tmp_path):
     assert torch.all(item["images"][..., 0, 0] == 0)
     assert item["images"][0, 0, 1, 1] == 0.5
     assert "centers" not in item
-    np.random.seed(42)
+    np.random.seed(1)
     moved, moved_mask = augment_sequence(item["images"].numpy(), item["mask"].numpy(), np.asarray(sample["centers"]), {"rotation_probability": 1, "translation_probability": 1, "maximum_translation": 64})
     assert moved.shape == (6, 4, 500, 500)
     assert np.array_equal(moved[0], moved[5])

@@ -122,13 +122,13 @@ def test_selection_has_no_cyclone_quota_hour_collapse_or_time_separation():
 
 def test_selection_is_reproducible_and_independent_of_cyclone_and_year_tags():
     rows = [selection_row(minute) for minute in range(24)]
-    selected = select_pairs(rows, count=10, seed=12)
-    assert selected == select_pairs(list(reversed(rows)), count=10, seed=12)
+    selected = select_pairs(rows, count=10, seed=1)
+    assert selected == select_pairs(list(reversed(rows)), count=10, seed=1)
     changed_tags = [{**row, "sid": f"changed_{i}", "season": 1900 + i,
                      "name": f"Another{i}", "cyclone_in_existing_inventory": False}
                     for i, row in enumerate(rows)]
     assert [row["observation_time_utc"] for row in selected] == [
-        row["observation_time_utc"] for row in select_pairs(changed_tags, 10, 12)]
+        row["observation_time_utc"] for row in select_pairs(changed_tags, 10, 1)]
 
 
 def test_training_validation_test_tags_and_six_hour_proximity_do_not_affect_selection():
@@ -139,11 +139,11 @@ def test_training_validation_test_tags_and_six_hour_proximity_do_not_affect_sele
              "exact_named_time_in_existing_inventory": offset == 0}
             for i, (split, offset) in enumerate(cases)]
     assert len(select_pairs(rows, count=100)) == len(cases)
-    selected = select_pairs(rows, count=7, seed=12)
+    selected = select_pairs(rows, count=7, seed=1)
     retagged = [{**row, "existing_split": "none", "minutes_from_training_record": 10000,
                  "exact_named_time_in_existing_inventory": False} for row in rows]
     assert [row["observation_time_utc"] for row in selected] == [
-        row["observation_time_utc"] for row in select_pairs(retagged, count=7, seed=12)]
+        row["observation_time_utc"] for row in select_pairs(retagged, count=7, seed=1)]
 
 
 def test_surface_screening_rejects_weak_dp_and_deduplicates_physical_observations():

@@ -190,7 +190,7 @@ def pair_surface_rows(
 
 
 def select_pairs(
-    rows: list[dict], count: int = 100, seed: int = 20261114,
+    rows: list[dict], count: int = 100, seed: int = 1,
     min_proxy_dp_hpa: float = 30,
 ) -> list[dict]:
     """Surface-review screening only: strong proxy dP, observation-level sampling.

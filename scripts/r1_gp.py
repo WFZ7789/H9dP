@@ -15,8 +15,15 @@ import torch
 
 from h9dp.r1 import kernel_components, record_folds, scores
 from h9dp.r1_gp import SpectralGP, group_weights, schedule
+from h9dp.r1_latitude import (
+    LATITUDE_MODES,
+    latitude_fields,
+    latitude_kernel,
+    native_r3_paths,
+)
+from h9dp.r1_response import response_component
 from scripts.r1_adaptive_kernel import assemble
-from scripts.r1_kernel import Cache, load_cache
+from scripts.r1_kernel import Cache, load_cache, read_json
 
 GEOMETRY = {
     "regions_recent": 1.4, "regions_latest": 1.0, "regions_trend": 0.20,
@@ -24,6 +31,10 @@ GEOMETRY = {
     "core_recent": 0.75, "core_latest": 0.4, "core_trend": 0.15,
     "profile_recent": 0.5, "profile_latest": 0.20, "profile_trend": 0.18,
     "structure_recent": 0.35, "structure_latest": 0.22, "structure_trend": 0.18,
+    "response_regions": 0.8, "response_thermal": 0.8, "response_core": 0.6,
+    "aperture_recent": 0.9, "aperture_latest": 0.45, "aperture_trend": 0.15,
+    "column_recent": 1.2, "column_latest": 0.55, "column_trend": 0.2,
+    "column_anomaly_recent": 0.90, "column_anomaly_latest": 0.40, "column_anomaly_trend": 0.15,
     "contour_recent": 0.9, "contour_latest": 0.48, "contour_trend": 0.22,
     "thermal_lift_recent": 0.9, "thermal_lift_latest": 0.3, "thermal_lift_trend": 0.15,
     "warm_brightness_recent": 0.8, "outer_cloud_recent": 0.75,
@@ -42,8 +53,16 @@ def configure(run: Path) -> None:
     os.environ.setdefault("TRITON_CACHE_DIR", str(run.parent / "triton"))
 
 
-def matricize(groups, train, held):
+def matricize(groups, train, held, response="none"):
     components = kernel_components(groups, train, held)
+    if response != "none":
+        # structure starts with offset, then the four co-located core means in K.
+        eye_bt = groups["core_recent"][:, 4]
+        for family in ("regions", "thermal", "core"):
+            pair = response_component(groups[f"{family}_recent"], eye_bt, train, held,
+                                      visibility=response == "visibility")
+            if pair is not None:
+                components[f"response_{family}"] = pair
     geometry = [k for k in GEOMETRY if k in components]
     scene = [k for k in SCENE if k in components]
     if not geometry or not scene:
@@ -59,10 +78,12 @@ def matricize(groups, train, held):
 
 
 def gp_predict(cache: Cache, feature_groups, train: np.ndarray, held: np.ndarray, steps: int, lr: float,
-               tail_focus: float = 0.45):
-    dot, distance, scene, gp, sp, geometry_names, scene_names = matricize(feature_groups, train, held)
+               tail_focus: float = 0.45, response: str = "none", *, latitude: np.ndarray | None = None):
+    dot, distance, scene, gp, sp, geometry_names, scene_names = matricize(feature_groups, train, held, response)
     n = len(train)
     blocks = tuple(m[:, :n, :n].contiguous() for m in (dot, distance, scene))
+    lat = torch.as_tensor(latitude, dtype=torch.float64, device="cuda") if latitude is not None else None
+    fit_lat = lat[:n, :n].contiguous() if lat is not None else None
     q = torch.tensor([QUALITY_INDEX[key] for key in cache.quality[train]], dtype=torch.long, device="cuda")
     target = cache.y[train]
     center, spread = float(target.mean()), max(float(target.std()), 1.0)
@@ -74,7 +95,7 @@ def gp_predict(cache: Cache, feature_groups, train: np.ndarray, held: np.ndarray
     states = []
     timings = []
     for local, evidence in ((True, 0.08), (False, 0.24)):
-        model = SpectralGP(gp, sp, local).cuda()
+        model = SpectralGP(gp, sp, local, latitude=lat is not None).cuda()
         objective = torch.compile(model, dynamic=False, fullgraph=True)
         optimizer = torch.optim.AdamW(model.parameters(), lr=lr, weight_decay=0.0, fused=True)
         step_s = []
@@ -83,7 +104,7 @@ def gp_predict(cache: Cache, feature_groups, train: np.ndarray, held: np.ndarray
         for step in range(steps):
             optimizer.zero_grad(set_to_none=True)
             optimizer.param_groups[0]["lr"] = schedule(step, steps, lr)
-            loss = objective(*blocks, y, q, importance, evidence)
+            loss = objective(*blocks, y, q, importance, evidence, fit_lat)
             loss.backward()
             optimizer.step()
             torch.cuda.synchronize()
@@ -92,7 +113,7 @@ def gp_predict(cache: Cache, feature_groups, train: np.ndarray, held: np.ndarray
         if not torch.isfinite(loss):
             raise RuntimeError("Nonfinite loss from compiled spectral GP")
         with torch.no_grad():
-            gram = model.kernel(dot, distance, scene)
+            gram = model.kernel(dot, distance, scene, lat)
             estimate = model.predict(gram[:n, :n], gram[n:, :n], y, q) * spread + center
         if not torch.isfinite(estimate).all():
             raise RuntimeError("Nonfinite spectral GP prediction")
@@ -105,6 +126,8 @@ def gp_predict(cache: Cache, feature_groups, train: np.ndarray, held: np.ndarray
                                       .detach().cpu().tolist(), strict=True)),
                  "scene": dict(zip(scene_names, (model.scene_prior + model.scene_delta).softmax(0)
                                    .detach().cpu().tolist(), strict=True))}
+        if model.log_latitude_mass is not None:
+            trace["latitude_mass"] = float(model.log_latitude_mass.detach().clamp(-7, 5).exp())
         timings.append(trace)
         states.append({"hyperparameters": model.cpu().state_dict(), "geometry": geometry_names, "scene": scene_names,
                        "target_mean": center, "target_scale": spread})
@@ -113,15 +136,32 @@ def gp_predict(cache: Cache, feature_groups, train: np.ndarray, held: np.ndarray
 
 def evaluate(args):
     cache = load_cache(args.features)
+    fields = None
+    geo = {"latitude_mode": args.latitude}
+    if args.native_r3_index is not None:
+        index, digest = read_json(args.native_r3_index)
+        manifest, _ = read_json(cache.root / "manifest.json")
+        if manifest.get("native_r3_index_sha256", digest) != digest:
+            raise ValueError("Native R3 index differs from the one used for feature extraction")
+        paths = native_r3_paths(index, cache.data["record"], cache.data["time"])
+        fields = latitude_fields(paths, cache.data["valid"])
+        covered = int(np.isfinite(fields[:, 1, 1]).sum())
+        if covered == 0:
+            raise ValueError("No native R3 center latitudes were available")
+        geo.update(latitude_index=str(args.native_r3_index.resolve()), latitude_index_sha256=digest,
+                   latitude_records=covered)
     args.output.mkdir(exist_ok=False)
+    if fields is not None:
+        np.savez_compressed(args.output / "latitude_inputs.npz", record=cache.data["record"], field=fields)
     configure(args.output)
-    groups = assemble(cache, contour=args.contour, spectral=args.spectral, snapshot=args.snapshot)
+    groups = assemble(cache, contour=args.contour, spectral=args.spectral, snapshot=args.snapshot,
+                      warm_column=args.warm_column, aperture=args.aperture)
     metadata = {"schema": "r1-spectral-gp-development/v1", "features": str(cache.root.resolve()),
                 "source_meta_sha256": cache.source_digest, "folds": args.folds, "seeds": args.seeds,
                 "steps": args.steps, "lr": args.lr, "tail_focus": args.tail_focus,
                 "contour": args.contour, "spectral": args.spectral, "snapshot": args.snapshot,
-                "records": len(cache.rows), "torch": torch.__version__,
-                "device": torch.cuda.get_device_name(), "execution": "torch.compile(fullgraph=True) CUDA FP64 solve",
+                "warm_column": args.warm_column, "aperture": args.aperture, "response": args.response, **geo,
+                "records": len(cache.rows), "torch": torch.__version__, "device": torch.cuda.get_device_name(), "execution": "torch.compile(fullgraph=True) CUDA FP64 solve",
                 "evaluation": "eager CUDA FP64 posterior mean; no outcome-conditioned update"}
     (args.output / "run.json").write_text(json.dumps(metadata, indent=2) + "\n")
     res = {}
@@ -135,7 +175,10 @@ def evaluate(args):
             for fold in range(args.folds):
                 train, held = np.flatnonzero(assignment != fold), np.flatnonzero(assignment == fold)
                 print(f"seed={seed} fold={fold} train={len(train)} held={len(held)}", flush=True)
-                forecast, states, timings = gp_predict(cache, groups, train, held, args.steps, args.lr, args.tail_focus)
+                lat = (latitude_kernel(fields, train, held, with_field=args.latitude == "field")
+                       if fields is not None else None)
+                forecast, states, timings = gp_predict(cache, groups, train, held, args.steps, args.lr,
+                                                       args.tail_focus, args.response, latitude=lat)
                 prediction[held] = forecast
                 torch.save({"train_records": torch.as_tensor(cache.data["record"][train]), "states": states},
                            args.output / f"seed{seed}_fold{fold}.pt")
@@ -154,15 +197,24 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--features", type=Path, required=True)
     parser.add_argument("--output", type=Path, required=True)
-    parser.add_argument("--seeds", type=int, nargs="+", default=[9463])
+    parser.add_argument("--seed", "--seeds", dest="seeds", type=int, nargs=1, default=[1])
     parser.add_argument("--folds", type=int, default=5)
     parser.add_argument("--steps", type=int, default=120)
     parser.add_argument("--lr", type=float, default=0.035)
     parser.add_argument("--tail-focus", type=float, default=0.45)
+    parser.add_argument("--response", choices=("none", "additive", "visibility"), default="none",
+                        help="Add fold-local nonlinear temperature responses, optionally modulated by eye B16")
+    parser.add_argument("--latitude", choices=LATITUDE_MODES, default="none",
+                        help="Add a native image center latitude term, optionally with the 3×3 latitude field")
+    parser.add_argument("--native-r3-index", type=Path, help="Native500/v2 index for R3 image navigation")
+    parser.add_argument("--warm-column", action="store_true", help="Include co-located warm spectra and local contrasts")
+    parser.add_argument("--aperture", action="store_true", help="Measure the local warm anomaly in two apertures")
     parser.add_argument("--contour", action="store_true", help="Include native eye-closure descriptors")
     parser.add_argument("--spectral", action="store_true", help="Include separate spectral/thermodynamic groups")
     parser.add_argument("--snapshot", action="store_true", help="Use only one latest valid scan per record")
     args = parser.parse_args()
+    if (args.latitude != "none") != (args.native_r3_index is not None):
+        parser.error("Latitude mode and --native-r3-index must be supplied together")
     if args.steps < 1 or args.lr <= 0 or not np.isfinite(args.tail_focus) or args.tail_focus < 0:
         parser.error("GP training needs positive steps and LR and a finite nonnegative tail weight")
     evaluate(args)

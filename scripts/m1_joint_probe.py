@@ -41,7 +41,7 @@ def train_fold(source, destination, outer, epochs, source_epoch, lr, parameter_w
     evaluation = np.flatnonzero(folds == outer).tolist()
     paired = [i for i in training if records[i]["params"] is not None]
     mean, std = normalization(records, training)
-    seed = int(config["training"]["seed"]) + 5000 + 1000 * outer
+    seed = int(config["training"]["seed"])
     seed_everything(seed)
     experts: list[nn.Module] = []
     for j, spec in enumerate(EXPERTS):

@@ -4,6 +4,8 @@ import re
 from pathlib import Path
 from urllib.parse import unquote, urlsplit
 
+import yaml
+
 ROOT = Path(__file__).resolve().parents[1]
 
 
@@ -32,3 +34,12 @@ def test_live_markdown_relative_file_links_resolve():
             if not target.exists():
                 missing.append(f"{document.relative_to(ROOT)} -> {raw}")
     assert not missing, "\n".join(missing)
+
+
+def test_project_seed_matches_all_training_and_split_defaults():
+    assert (ROOT / "SEED").read_text().strip() == "1"
+    for path in (ROOT / "configs").glob("*.yaml"):
+        config = yaml.safe_load(path.read_text())
+        assert config["training"]["seed"] == 1, path
+        if "split_seed" in config["data"]:
+            assert config["data"]["split_seed"] == 1, path

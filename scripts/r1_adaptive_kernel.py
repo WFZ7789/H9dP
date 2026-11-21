@@ -116,10 +116,11 @@ def latest_snapshot(data: dict[str, np.ndarray]) -> dict[str, np.ndarray]:
 
 
 def assemble(cache: Cache, other: dict[str, np.ndarray] | None = None, views: np.ndarray | None = None,
-             *, contour: bool = False, spectral: bool = False, snapshot: bool = False):
+             *, contour: bool = False, spectral: bool = False, snapshot: bool = False, warm_column: bool = False,
+             aperture: bool = False):
     def extract(data, view):
         data = latest_snapshot(data) if snapshot else data
-        return {**feature_groups(data), **extra_groups(data, view, contour, spectral)}
+        return {**feature_groups(data), **extra_groups(data, view, contour, spectral, warm_column, aperture)}
 
     stored_views = np.load(cache.root / "views.npy", allow_pickle=False, mmap_mode="r")
     groups = extract(cache.data, stored_views)
@@ -146,7 +147,7 @@ def evaluate(cache: Cache, output: Path, seeds: list[int], folds: int):
             for fold in range(folds):
                 t = time.monotonic()
                 train, held = np.flatnonzero(assignment != fold), np.flatnonzero(assignment == fold)
-                forecast, report = adaptive_predictions(groups, cache.y, cache.quality, train, held, seed * 97 + fold)
+                forecast, report = adaptive_predictions(groups, cache.y, cache.quality, train, held, seed)
                 for tag, rows in forecast.items():
                     predicted[tag][held] = rows
                 trace.append(report)
@@ -169,7 +170,7 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--features", type=Path, required=True)
     parser.add_argument("--output", type=Path, required=True)
-    parser.add_argument("--seeds", type=int, nargs="+", default=[9463])
+    parser.add_argument("--seed", "--seeds", dest="seeds", type=int, nargs=1, default=[1])
     parser.add_argument("--folds", type=int, default=5)
     args = parser.parse_args()
     evaluate(load_cache(args.features), args.output, args.seeds, args.folds)

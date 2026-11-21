@@ -30,7 +30,7 @@ from .prepare import load_cache
 from .t1a import ARCHITECTURE
 
 
-def select_records(index: dict, count: int = 24, seed: int = 42) -> list[dict]:
+def select_records(index: dict, count: int = 24, seed: int = 1) -> list[dict]:
     """Uniform record sampling, independent of labels, names and quality."""
     count = operator.index(count)
     records = [operator.index(sample["record"]) for sample in index["samples"]]
@@ -194,7 +194,7 @@ def _update(model, optimizer, data, permutation, batch_size, target_std, clip):
 
 
 def run_fit(config: dict, directory: Path, *, count=24, max_steps=500, batch_size=6,
-            learning_rate=0.0003, seed=42, evaluate_every=10, rmse_target=1.0) -> dict:
+            learning_rate=0.0003, seed=1, evaluate_every=10, rmse_target=1.0) -> dict:
     """Fit exactly one subset from fresh weights; never instantiate validation data."""
     if (count < 2 or max_steps < 1 or batch_size < 1 or evaluate_every < 1
             or not math.isfinite(learning_rate) or learning_rate <= 0

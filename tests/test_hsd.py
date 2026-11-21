@@ -4,7 +4,15 @@ from dataclasses import replace
 import numpy as np
 import pytest
 
-from h9dp.hsd import brightness_temperature, crop_window, earth_mask, lonlat_to_pixel, read_counts, read_header
+from h9dp.hsd import (
+    brightness_temperature,
+    crop_window,
+    earth_mask,
+    lonlat_to_pixel,
+    pixel_latitude,
+    read_counts,
+    read_header,
+)
 
 
 def synthetic_hsd(path, endian):
@@ -67,4 +75,17 @@ def test_segment_geometry_and_edge_crop(tmp_path):
     header = replace(header, width=5500, height=550, segment_first_line=2201, projection=(140.7, 20466275, 20466275, 2750.5, 2750.5, 42164., 6378.137, 6356.7523))
     assert crop_window(header, 0, 140.7) == (2500, 50)
     assert not earth_mask(header, (0, 0), 8).any()
+
+
+def test_pixel_latitude_inverts_segmented_projection_and_masks_space(tmp_path):
+    h = read_header(synthetic_hsd(tmp_path / "sample.DAT", "<"))
+    h = replace(h, projection=(*h.projection[:3], 2750.5, 2750.5, *h.projection[5:]), segment_first_line=1001)
+    expected = np.array([0.0, 28.5, -22.5, 41.5])
+    points = [lonlat_to_pixel(h, lat, lon) for lat, lon in zip(expected, [140.7, 160.0, 125.0, 132.0], strict=True)]
+    columns, rows = np.array(points).T
+    np.testing.assert_allclose(pixel_latitude(h, columns, rows), expected, atol=1e-10)
+    col = np.array([0.0, 2749.5])[None, :]
+    row = np.array([-1000.0, 1749.5])[:, None]
+    lat = pixel_latitude(h, col, row)
+    assert np.isnan(lat[0, 0]) and lat[1, 1] == pytest.approx(0.0)
 

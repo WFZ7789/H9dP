@@ -1,10 +1,9 @@
 # R1：多尺度亮温结构、眼区追踪与谱高斯过程
 
-R1 是本轮小样本路线的暂定名称。**状态：开发路线（2026-11-18 UTC）。已复用 546 条
-Himawari 缓存完成 5 折记录轮转 OOF 评估，未达 < 5.9 hPa 目标，当前暂停。** 最佳已观察
-Good OOF RMSE 为 **7.61 hPa**（全体 **9.23 hPa**，眼区追踪特征 + 谱高斯过程）。这是开发
-评估，不是盲测，也不是独立观测测试集成绩；实际数字与限制见
-[2026-11-18 开发结果](RESULTS_20261118.md)。
+**状态（2026-11-21 UTC）：种子固定为 1，完整 546 条记录的 Good / 全体折外 RMSE 为 7.45 / 8.96 hPa。**
+后续研发采用固定中心和追踪中心预测等权平均的可加响应 GP，有原生 R3 导航时加入图像中心纬度。
+眼区暖异常面积没有改善小眼组，Good < 5.9 hPa 的目标仍待达到。见[纬度与眼区暖异常结果](APERTURE_20261121.md)。
+此前的[追踪配对复验](TRACKING_RESPONSE_20261120.md)记录了门控和误差分布，以下为[首轮开发](RESULTS_20261118.md)的协议。
 
 ## 1. 目标与边界
 
@@ -38,7 +37,7 @@ Good OOF RMSE 为 **7.61 hPa**（全体 **9.23 hPa**，眼区追踪特征 + 谱�
 
 `src/h9dp/r1_track.py` 用高斯加权归一化互相关，把每个较早帧配准到同一记录的分析时次，
 再用配准后的中心重算特征；仅在图像侧进行，不使用 dP、MOTIS 参数或最佳路径气压。3261 个
-可用帧中 2154 个接受平移，逐记录中位接受位移 11.67 px（缓存 manifest 记录）。配准结果
+可用帧中 2154 个接受平移，被接受帧的中位位移 11.67 px（缓存 manifest 记录）。配准结果
 只影响 `features_tracked`，`features_xy` 保持原始目标中心，便于比较。
 
 ## 4. 评估协议
@@ -67,35 +66,41 @@ Good/Fair/Poor 加权 2/1/0.5，训练时做 D4 旋转/翻转。`neural_residual
 
 ## 6. 复现命令
 
+当前运行使用项目固定种子 1。数据目录、完整训练和折外评估命令见[单种子结果与复现](APERTURE_20261121.md#复现)。此前模型的配置及实际结果见[首轮开发记录](RESULTS_20261118.md)。
+
+<details>
+<summary>2026-11-18 历史运行命令（保留当时的代码版本、种子与目录）</summary>
+
 均使用 Conda 环境 `fy3-aivis-v1`，工作目录为仓库根。特征缓存与全部运行产物放在
 `/mnt/data/H9dP/runs/r1/iteration_20261118/`，不进入 Git。
 
 ```bash
+export PYTHONPATH=src:.
 # 特征缓存（v2 坐标口径）
-conda run --no-capture-output -n fy3-aivis-v1 python -u scripts/prepare_r1.py \
+conda run --no-capture-output -n fy3-aivis-v1 python -u -m scripts.prepare_r1 \
   --source /mnt/data/H9dP/runs/m1_adapt/data_v1 \
   --output /mnt/data/H9dP/runs/r1/iteration_20261118/features_xy --workers 7
 
 # 眼区追踪版
-conda run --no-capture-output -n fy3-aivis-v1 python -u scripts/prepare_r1.py \
+conda run --no-capture-output -n fy3-aivis-v1 python -u -m scripts.prepare_r1 \
   --source /mnt/data/H9dP/runs/m1_adapt/data_v1 \
   --output /mnt/data/H9dP/runs/r1/iteration_20261118/features_tracked --workers 7 --track
 
 # 谱高斯过程（眼区追踪 + 尾部权重默认 0.45）
-conda run --no-capture-output -n fy3-aivis-v1 python -u scripts/r1_gp.py \
+conda run --no-capture-output -n fy3-aivis-v1 python -u -m scripts.r1_gp \
   --features /mnt/data/H9dP/runs/r1/iteration_20261118/features_tracked \
   --output /mnt/data/H9dP/runs/r1/iteration_20261118/spectral_gp_tracked --seeds 9463
 
 # 小型神经网络
-conda run --no-capture-output -n fy3-aivis-v1 python -u scripts/r1_neural.py \
+conda run --no-capture-output -n fy3-aivis-v1 python -u -m scripts.r1_neural \
   --features /mnt/data/H9dP/runs/r1/iteration_20261118/features_xy \
   --output /mnt/data/H9dP/runs/r1/iteration_20261118/neural_direct_xy --seeds 9463 9464
 
 # 闭式核与自适应核诊断
-conda run --no-capture-output -n fy3-aivis-v1 python -u scripts/r1_kernel.py \
+conda run --no-capture-output -n fy3-aivis-v1 python -u -m scripts.r1_kernel \
   --features /mnt/data/H9dP/runs/r1/iteration_20261118/features_xy \
   --output /mnt/data/H9dP/runs/r1/iteration_20261118/kernel_xy --seeds 9463 9464
-conda run --no-capture-output -n fy3-aivis-v1 python -u scripts/r1_adaptive_kernel.py \
+conda run --no-capture-output -n fy3-aivis-v1 python -u -m scripts.r1_adaptive_kernel \
   --features /mnt/data/H9dP/runs/r1/iteration_20261118/features_xy \
   --output /mnt/data/H9dP/runs/r1/iteration_20261118/adaptive_kernel_xy --seeds 9463 9464
 ```
@@ -103,6 +108,8 @@ conda run --no-capture-output -n fy3-aivis-v1 python -u scripts/r1_adaptive_kern
 `--contour`、`--spectral`、`--snapshot`、`--tail-focus` 分别是原生眼闭包描述、独立谱组、
 单次扫描快照和尾部权重开关；实际启用的配置记录在每个运行目录的 `run.json`。原生投落送
 桥接用 `scripts/r1_observed.py`，参数与结果见[开发结果](RESULTS_20261118.md)。
+
+</details>
 
 ## 7. 产物
 

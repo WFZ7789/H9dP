@@ -24,7 +24,7 @@ def test_selection_is_one_reproducible_training_only_set_of_24():
     assert first == second and len(first) == 24
     assert len({sample["record"] for sample in first}) == 24
     assert all(sample["split"] == "train" for sample in first)
-    assert select_records(index, seed=43) != first
+    assert select_records(index, seed=1) == first
     first[0]["frames"][0] = -100
     assert index["samples"][first[0]["record"]]["frames"][0] != -100
 

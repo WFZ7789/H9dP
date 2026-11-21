@@ -28,8 +28,8 @@ from scripts.m1_adapt import padded_batch
 
 def test_rotating_folds_cover_every_record_without_splitting_storms():
     records = [{"storm_id": f"2020:s{i // 3}"} for i in range(30)]
-    folds = grouped_folds(records, 3, 42)
-    np.testing.assert_array_equal(folds, grouped_folds(records, 3, 42))
+    folds = grouped_folds(records, 3, 1)
+    np.testing.assert_array_equal(folds, grouped_folds(records, 3, 1))
     assert set(folds) == {0, 1, 2}
     trained, evaluated = set(), set()
     for fold in range(3):
@@ -43,7 +43,7 @@ def test_rotating_folds_cover_every_record_without_splitting_storms():
     assert trained == evaluated == set(range(30))
     # Inner calibration folds must not introduce any outer evaluation storm.
     outer_train = np.flatnonzero(folds != 0)
-    inner = grouped_folds([records[i] for i in outer_train], 2, 43)
+    inner = grouped_folds([records[i] for i in outer_train], 2, 1)
     assert len(inner) == len(outer_train)
     assert all(folds[i] != 0 for i in outer_train)
 
@@ -73,7 +73,7 @@ def test_missing_frame_statistics_are_zero_not_fake_kelvin():
 
 
 def test_encoder_does_not_normalize_empty_region_placeholders():
-    seed_everything(42)
+    seed_everything(1)
     encoder = M1Encoder(bands=4, frames=2, image_size=32, radii=(4, 10),
                         channels=(8, 12, 24, 32, 32), frame_width=8).eval()
     encoder.band_mean.fill_(250.0)
@@ -95,7 +95,7 @@ def test_encoder_does_not_normalize_empty_region_placeholders():
 
 
 def test_calibrator_learns_from_predicted_not_true_parameter_distribution():
-    rng = np.random.default_rng(42)
+    rng = np.random.default_rng(1)
     truth = rng.normal(size=(100, 5))
     truth[:, 4] = -70 + truth[:, 4]
     coefficients = np.array([50.0, 3.0, 6.0, 70.0, 3.0])
@@ -135,7 +135,7 @@ def test_adaptation_config_loads_with_repository_contract():
 
 
 def test_nested_probe_has_no_permanent_holdout_or_outer_storm_leakage(tmp_path, monkeypatch):
-    rng = np.random.default_rng(42)
+    rng = np.random.default_rng(1)
     parameters = rng.normal(size=(48, 5))
     parameters[:, 4] = -70 + parameters[:, 4]
     target = design_matrix(parameters) @ np.array([50, 3, 6, 70, 3])
@@ -147,7 +147,7 @@ def test_nested_probe_has_no_permanent_holdout_or_outer_storm_leakage(tmp_path, 
     work.mkdir()
     (work / "all_meta.json").write_text(json.dumps({"records": records, "counts": {"all": 48}}))
     config = {"repository_root": str(tmp_path), "data": {"work_dir": str(work)},
-              "training": {"seed": 42, "quality_weights": {"Good": 2, "Fair": 1, "Poor": 0.5}},
+              "training": {"seed": 1, "quality_weights": {"Good": 2, "Fair": 1, "Poor": 0.5}},
               "crossfit": {"outer_folds": 2, "inner_folds": 2, "ridge_alpha": 10}}
     monkeypatch.setattr(m1_adapt, "initialize_device", lambda config: (torch.device("cpu"), {}))
     calls = []

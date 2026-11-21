@@ -25,7 +25,7 @@ def tiny_config(**updates):
 
 
 def inputs(batch=1, side=24):
-    torch.manual_seed(123)
+    torch.manual_seed(1)
     images = torch.randn(batch, 6, 4, side, side)
     mask = torch.ones(batch, 6, 1, side, side, dtype=torch.bool)
     times = torch.tensor([[-300., -240., -180., -120., -60., 0.]]).expand(batch, -1)
@@ -51,7 +51,7 @@ def test_factory_parameter_budget_and_default_unchanged():
 
 @pytest.mark.parametrize("chunk,checkpointing", [(1, False), (7, True), (29, False)])
 def test_online_attention_output_and_gradients_match_dense(chunk, checkpointing):
-    torch.manual_seed(2)
+    torch.manual_seed(1)
     shapes = [(2, 2, 3, 4), (2, 2, 17, 4), (2, 2, 17, 4), (2, 17, 8)]
     values = [torch.randn(*shape, requires_grad=True) for shape in shapes]
     valid = torch.ones(2, 17, dtype=torch.bool)

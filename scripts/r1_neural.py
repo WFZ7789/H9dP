@@ -171,10 +171,10 @@ def train(args):
                 initial = np.zeros(len(assigned))
                 if groups is not None:
                     baseline, oof, _ = nested_predict(groups, cache.y, cache.quality, train_rows, held,
-                                                       seed * 97 + fold, 3)
+                                                       seed, 3)
                     initial[train_rows], initial[held] = oof["structural"], baseline["structural"]
                 fold_prediction, state, timing = fit_fold(cache, views, times, valid, raw_profile, aux,
-                                                         train_rows, held, args, seed * 97 + fold, initial)
+                                                         train_rows, held, args, seed, initial)
                 prediction[held] = fold_prediction
                 torch.save(state, args.output / f"seed{seed}_fold{fold}.pt")
                 metrics = scores(cache.y[held], prediction[held], cache.quality[held])
@@ -192,7 +192,7 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--features", required=True, type=Path)
     parser.add_argument("--output", required=True, type=Path)
-    parser.add_argument("--seeds", nargs="+", type=int, default=[9463])
+    parser.add_argument("--seed", "--seeds", dest="seeds", type=int, nargs=1, default=[1])
     parser.add_argument("--folds", type=int, default=5)
     parser.add_argument("--epochs", type=int, default=64)
     parser.add_argument("--batch-size", type=int, default=32)

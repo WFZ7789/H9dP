@@ -66,7 +66,7 @@ def attention_statistics(query, key, valid, chunk_size):
         }
 
 
-def shuffle_pixels_in_tiles(value, side, seed=20261101):
+def shuffle_pixels_in_tiles(value, side, seed=1):
     """Same permutation across time/bands/mask: preserve joint pixel trajectories.
 
     Within each tile the multichannel empirical distribution is unchanged,
@@ -333,7 +333,7 @@ def gradient_probe(model, batch):
 
 
 def initialization_probe(model, model_config, target, batch, device):
-    """Same three records; compare trained queries with untrained seed-42 queries."""
+    """Same three records; compare trained queries with untrained seed-1 queries."""
     import numpy as np
     import torch
 
@@ -341,7 +341,7 @@ def initialization_probe(model, model_config, target, batch, device):
 
     result = {}
     with torch.random.fork_rng(devices=[device.index or 0]):
-        torch.manual_seed(42)
+        torch.manual_seed(1)
         initial = build_model(model_config, target["mean_hpa"], target["std_hpa"]).to(device).eval().requires_grad_(False)
         for name, current in (("trained", model), ("initialized_untrained", initial)):
             storage = {}

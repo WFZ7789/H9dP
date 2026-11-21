@@ -57,16 +57,16 @@ def test_temporal_summary_uses_most_recent_available_not_last_slot():
 
 
 def test_record_folds_repeat_and_cover_without_group_metadata():
-    first = record_folds(21, 5, 12)
-    np.testing.assert_array_equal(first, record_folds(21, 5, 12))
+    first = record_folds(21, 5, 1)
+    np.testing.assert_array_equal(first, record_folds(21, 5, 1))
     assert set(np.bincount(first)) == {4, 5}
-    assert not np.array_equal(first, record_folds(21, 5, 13))
+    np.testing.assert_array_equal(first[np.random.default_rng(1).permutation(21)], np.arange(21) % 5)
     with pytest.raises(ValueError):
-        record_folds(3, 4, 12)
+        record_folds(3, 4, 1)
 
 
 def test_weighted_kernel_ridge_matches_primal_unpenalized_intercept():
-    rng = np.random.default_rng(91)
+    rng = np.random.default_rng(1)
     x = rng.normal(size=(12, 5))
     y = 13 + rng.normal(size=9)
     w = np.linspace(0.4, 2.0, len(y))
@@ -81,7 +81,7 @@ def test_weighted_kernel_ridge_matches_primal_unpenalized_intercept():
 
 
 def test_relevance_only_reads_training_labels():
-    rng = np.random.default_rng(17)
+    rng = np.random.default_rng(1)
     x = {"scene": rng.normal(size=(13, 10))}
     y = rng.normal(size=13)
     quality = np.full(len(y), "Fair")
@@ -100,13 +100,13 @@ def test_normalizer_and_fixed_batch_padding():
     loc, scale = fit_normalizer(data, np.array([[True, False], [True, True]]))
     np.testing.assert_allclose(loc, [5, 0])
     assert np.all(standardized(data, loc, scale)[[0, 1], [0, 1], 1] == 0)
-    result = list(batches(np.arange(6), 4, np.random.default_rng(8)))
+    result = list(batches(np.arange(6), 4, np.random.default_rng(1)))
     assert all(len(rows) == 4 for rows, _ in result)
     np.testing.assert_array_equal(np.sort(np.concatenate([rows[valid] for rows, valid in result])), np.arange(6))
 
 
 def test_model_missing_frames_have_no_effect_and_metrics_use_prediction_minus_target():
-    torch.manual_seed(4)
+    torch.manual_seed(1)
     torch.set_num_threads(2)
     net = R1Net(8, "fused").eval()
     x = torch.randn(2, 3, 10, 64, 64)

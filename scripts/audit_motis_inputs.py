@@ -5,7 +5,7 @@ import csv
 import hashlib
 import json
 from collections import Counter
-from datetime import datetime
+from datetime import UTC, datetime
 from pathlib import Path
 
 import numpy as np
@@ -31,7 +31,7 @@ def read_json(path):
 def observation_key(name, year, date, time, satellite):
     """Normalize formatting only; never fuzzy-match names, dates, or times."""
     year, date, time = int(year), int(date), int(time)
-    datetime(year, date // 100, date % 100, time // 100, time % 100)
+    datetime(year, date // 100, date % 100, time // 100, time % 100, tzinfo=UTC)
     return str(name).strip().casefold(), year, date, time, str(satellite).strip().upper()
 
 
@@ -78,7 +78,7 @@ def error_metrics(prediction, target):
     }
 
 
-def oof_predictions(features, target, seed=42, fold_count=5):
+def oof_predictions(features, target, seed=1, fold_count=5):
     """Record-uniform folds; each fit sees only its own training labels."""
     features, target = np.asarray(features), np.asarray(target)
     if len(features) != len(target) or len(target) < fold_count or fold_count < 2:
@@ -95,7 +95,7 @@ def oof_predictions(features, target, seed=42, fold_count=5):
     return prediction, fold_ids
 
 
-def audit(csv_path, records_path, cache_path, seed=42):
+def audit(csv_path, records_path, cache_path, seed=1):
     with csv_path.open(newline="", encoding="utf-8-sig") as stream:
         rows = list(csv.DictReader(stream))
     lookup = unique_lookup(rows)
@@ -204,8 +204,8 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--csv", type=Path, required=True)
     parser.add_argument("--records", type=Path, default=Path("MOTIS_cyclone_records.json"))
-    parser.add_argument("--cache", type=Path, default=Path("runs/h9dp/native500_v2"))
-    parser.add_argument("--seed", type=int, default=42)
+    parser.add_argument("--cache", type=Path, default=Path("runs/h9dp/native500_v2_seed1"))
+    parser.add_argument("--seed", type=int, default=1)
     parser.add_argument("--output", type=Path, required=True, help="Store the report outside Git")
     args = parser.parse_args()
     try:

@@ -70,7 +70,7 @@ def main() -> None:
     parser.add_argument("--poci-csv", type=Path, required=True)
     parser.add_argument("--records", type=Path, default=Path("MOTIS_cyclone_records.json"))
     parser.add_argument("--count", type=int, default=100)
-    parser.add_argument("--seed", type=int, default=20261115)
+    parser.add_argument("--seed", type=int, default=1)
     parser.add_argument("--cases-json", type=Path)
     parser.add_argument("--workers", type=int, default=2)
     parser.add_argument("--min-request-interval", type=float, default=0.5)

@@ -1,8 +1,8 @@
 data:
-  cache_dir: runs/h9dp/native500_v2
+  cache_dir: runs/h9dp/native500_v2_seed1
   records: MOTIS_cyclone_records.json
   motis_csv: /mnt/data/H9dP/reference/motis/260212/MOTIS_dataset_260212.csv
-  work_dir: /mnt/data/H9dP/runs/m1/data
+  work_dir: /mnt/data/H9dP/runs/m1_seed1/data
 model:
   architecture: m1/v1
   frames: 6
@@ -16,7 +16,7 @@ model:
   control_frame_width: 88
   control_temporal_width: 96
 training:
-  seed: 42
+  seed: 1
   dev_epochs: 120
   early_stopping_patience: 25
   learning_rate: 0.0003
@@ -31,4 +31,4 @@ training:
   torch_compile: true
   compile_mode: default
   activation_checkpointing: false
-output_dir: /mnt/data/H9dP/runs/m1
+output_dir: /mnt/data/H9dP/runs/m1_seed1

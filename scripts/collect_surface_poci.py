@@ -94,7 +94,7 @@ def main() -> None:
     parser.add_argument("--first-year", type=int, default=2016)
     parser.add_argument("--last-year", type=int, default=2025)
     parser.add_argument("--count", type=int, default=100)
-    parser.add_argument("--seed", type=int, default=20261114)
+    parser.add_argument("--seed", type=int, default=1)
     parser.add_argument("--max-station-years", type=int, default=100)
     parser.add_argument("--workers", type=int, default=8)
     parser.add_argument("--min-proxy-dp-hpa", type=float, default=30,

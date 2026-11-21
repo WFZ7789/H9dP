@@ -5,6 +5,8 @@ from __future__ import annotations
 import numpy as np
 
 from h9dp.r1 import RING_EDGES, _normalize, summarize_time
+from h9dp.r1_aperture import aperture_features
+from h9dp.r1_column import warm_columns
 
 
 def _nan_extreme(x: np.ndarray, axis: int, maximum: bool) -> np.ndarray:
@@ -106,9 +108,13 @@ def spectral_blocks(data: dict[str, np.ndarray]) -> dict[str, np.ndarray]:
 
 
 def extra_groups(data: dict[str, np.ndarray], views: np.ndarray, contour: bool = False,
-                 spectral: bool = False) -> dict[str, np.ndarray]:
+                 spectral: bool = False, warm_column: bool = False, aperture: bool = False) -> dict[str, np.ndarray]:
     scene, inner = image_fingerprint(views)
     inputs = {"thermal": morphology(data), "scene": scene, "scene_core": inner}
+    if warm_column:
+        inputs.update(warm_columns(views))
+    if aperture:
+        inputs["aperture"] = aperture_features(views)
     if contour:
         inputs["contour"] = contour_features(views)
     if spectral:

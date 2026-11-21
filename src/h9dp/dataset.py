@@ -101,7 +101,10 @@ def seed_worker(worker_id: int) -> None:
 def make_loader(config: dict, index: dict, split: str, batch_size: int, epoch: int = 0, augment: bool | None = None) -> DataLoader:
     training = split == "train" and augment is not False
     dataset = SequenceDataset(config["data"]["cache_dir"], index, split, config["augmentation"] if training else None)
-    generator = torch.Generator().manual_seed(config["training"]["seed"] + epoch)
+    generator = torch.Generator().manual_seed(config["training"]["seed"])
+    # Advance the same stream to the epoch so a resumed epoch has the same shuffle.
+    for _ in range(epoch):
+        torch.randperm(len(dataset), generator=generator)
     workers = config["training"]["workers"]
     kwargs = {}
     if workers:

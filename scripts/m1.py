@@ -590,10 +590,10 @@ def run_dev(config: dict) -> dict:
     }
     predictions = {}
     histories = {}
-    for position, spec in enumerate(EXPERTS):
+    for spec in EXPERTS:
         column = PARAMETER_NAMES.index(spec.parameter)
         target_mean, target_std = target_statistics(meta, train_idx, column)
-        seed_everything(int(config["training"]["seed"]) + position)
+        seed_everything(int(config["training"]["seed"]))
         model = build_expert(spec, config, mean, std, target_mean, target_std, device)
         history = train_model(
             model,
@@ -606,7 +606,7 @@ def run_dev(config: dict) -> dict:
             lambda outputs, batch, column=column, mean=target_mean, std=target_std: evaluate_loss(outputs, batch, column, mean, std),
             output / f"{spec.name}_checkpoint.pt",
             output / f"{spec.name}.jsonl",
-            int(config["training"]["seed"]) + position,
+            int(config["training"]["seed"]),
             target_mean,
             target_std,
         )
@@ -636,7 +636,7 @@ def run_dev(config: dict) -> dict:
         }
         predictions[spec.name] = holdout
         histories[spec.name] = history
-    seed_everything(int(config["training"]["seed"]) + 10)
+    seed_everything(int(config["training"]["seed"]))
     direct = build_control(config, mean, std, dp_mean, dp_std, device)
     control_history = train_model(
         direct,
@@ -649,7 +649,7 @@ def run_dev(config: dict) -> dict:
         lambda outputs, batch: evaluate_loss(outputs, batch, None, dp_mean, dp_std),
         output / "control_checkpoint.pt",
         output / "control.jsonl",
-        int(config["training"]["seed"]) + 10,
+        int(config["training"]["seed"]),
         dp_mean,
         dp_std,
     )
@@ -736,12 +736,12 @@ def run_final(config: dict) -> dict:
         "baseline": {},
     }
     predictions = {}
-    for position, spec in enumerate(EXPERTS):
+    for spec in EXPERTS:
         column = PARAMETER_NAMES.index(spec.parameter)
         target_mean, target_std = target_statistics(train_meta, train_idx, column)
         epochs = max(1, int(dev_metrics["experts"][spec.name]["best_epoch"]))
         result["dev_best_epochs"][spec.name] = epochs
-        seed_everything(int(config["training"]["seed"]) + position)
+        seed_everything(int(config["training"]["seed"]))
         model = build_expert(spec, config, mean, std, target_mean, target_std, device)
         history = train_model(
             model,
@@ -754,7 +754,7 @@ def run_final(config: dict) -> dict:
             lambda outputs, batch, column=column, mean=target_mean, std=target_std: evaluate_loss(outputs, batch, column, mean, std),
             output / f"{spec.name}_checkpoint.pt",
             output / f"{spec.name}.jsonl",
-            int(config["training"]["seed"]) + position,
+            int(config["training"]["seed"]),
             target_mean,
             target_std,
         )
@@ -770,7 +770,7 @@ def run_final(config: dict) -> dict:
             "target_std": target_std,
             "checkpoint": str(output / f"{spec.name}_checkpoint.pt"),
         }
-    seed_everything(int(config["training"]["seed"]) + 10)
+    seed_everything(int(config["training"]["seed"]))
     direct = build_control(config, mean, std, dp_mean, dp_std, device)
     epochs = max(1, int(dev_metrics["control"]["best_epoch"]))
     result["dev_best_epochs"]["control"] = epochs
@@ -785,7 +785,7 @@ def run_final(config: dict) -> dict:
         lambda outputs, batch: evaluate_loss(outputs, batch, None, dp_mean, dp_std),
         output / "control_checkpoint.pt",
         output / "control.jsonl",
-        int(config["training"]["seed"]) + 10,
+        int(config["training"]["seed"]),
         dp_mean,
         dp_std,
     )

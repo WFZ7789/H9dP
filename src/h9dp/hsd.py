@@ -116,10 +116,8 @@ def read_header(path: str | Path) -> Header:
     return header
 
 
-def read_counts(path: str | Path) -> tuple[Header, np.ndarray, str]:
-    path = Path(path)
-    original = path.read_bytes()
-    checksum = hashlib.sha256(original).hexdigest()
+def decode_counts(original: bytes, path: Path) -> tuple[Header, np.ndarray]:
+    """Decode HSD bytes without computing an archival checksum."""
     raw = bz2.decompress(original) if path.suffix == ".bz2" else gzip.decompress(original) if path.suffix == ".gz" else original
     header = _parse_header(raw)
     if len(raw) != header.header_bytes + header.data_bytes:
@@ -134,7 +132,14 @@ def read_counts(path: str | Path) -> tuple[Header, np.ndarray, str]:
     if len(payload) != header.width * header.height * 2:
         raise ValueError(f"Truncated image payload: {path}")
     counts = np.frombuffer(payload, dtype=header.endian + "u2").reshape(header.height, header.width)
-    return header, counts, checksum
+    return header, counts
+
+
+def read_counts(path: str | Path) -> tuple[Header, np.ndarray, str]:
+    path = Path(path)
+    original = path.read_bytes()
+    header, counts = decode_counts(original, path)
+    return header, counts, hashlib.sha256(original).hexdigest()
 
 
 def lonlat_to_pixel(header: Header, latitude: float, longitude: float) -> tuple[float, float]:

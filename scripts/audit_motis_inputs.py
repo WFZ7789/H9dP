@@ -10,14 +10,12 @@ from pathlib import Path
 
 import numpy as np
 
+from h9dp.pressure_labels import read_catalog, verify_catalog_labels
+
 COLUMNS = (
     "B24 dT", "B36 dT", "Upper dif", "Mid dif", "B27 dT", "Eye size",
     "B31-B32", "B33 dT tr.", "Aqua Bias", "Terra Bias",
 )
-PAPER_COEFFICIENTS = np.array([
-    3.4313, 5.6742, 42.7566, -28.7243, -0.0785,
-    61.6813, -1.3833, 2.5781, -1.0099, -0.6308,
-])
 MINIMAL_COLUMNS = (0, 1, 5, 7)
 
 
@@ -54,6 +52,18 @@ def unique_lookup(rows):
             raise ValueError(f"Ambiguous duplicate MOTIS key: {key}")
         lookup[key] = position
     return lookup
+
+
+def read_thermal_rows(path: Path) -> list[dict]:
+    """Read only the pass identifiers and intermediate parameters used by M1."""
+    required = ("Name", "Year", "Date", "Time", "Satellite", "T CDO", *COLUMNS)
+    with path.open(newline="", encoding="utf-8-sig") as stream:
+        reader = csv.DictReader(stream)
+        fields = set(reader.fieldnames or ())
+        if missing := set(required) - fields:
+            raise ValueError(f"MOTIS table {path} lacks required columns: {sorted(missing)}")
+        columns = (*required, "npix") if "npix" in fields else required
+        return [{column: row[column] for column in columns} for row in reader]
 
 
 def design_matrix(rows):
@@ -96,19 +106,17 @@ def oof_predictions(features, target, seed=1, fold_count=5):
 
 
 def audit(csv_path, records_path, cache_path, seed=1):
-    with csv_path.open(newline="", encoding="utf-8-sig") as stream:
-        rows = list(csv.DictReader(stream))
+    rows = read_thermal_rows(csv_path)
     lookup = unique_lookup(rows)
-    records = read_json(records_path)["records"]
+    records, catalog_digest = read_catalog(records_path)
     features = design_matrix(rows)
-    old_targets = np.array([float(row["dP MOTIS"]) for row in rows])
     result = {
         "status": "real tabular audit only; no images loaded; no neural training",
         "seed": seed,
         "inputs": {},
         "source_rows": len(rows),
         "source_years": dict(sorted(Counter(int(row["Year"]) for row in rows).items())),
-        "paper_formula_vs_source_dP": error_metrics(12.8 + features @ PAPER_COEFFICIENTS, old_targets),
+        "catalog_sha256": catalog_digest,
         "splits": {},
     }
     inputs = {"csv": csv_path, "records": records_path}
@@ -125,21 +133,11 @@ def audit(csv_path, records_path, cache_path, seed=1):
     }
     for split in ("train", "validation"):
         samples = read_json(inputs[split])
-        if len({sample["record"] for sample in samples}) != len(samples):
-            raise ValueError(f"Duplicate record IDs in {split}")
+        verify_catalog_labels(samples, records)
         matched, missing = [], []
         for sample in sorted(samples, key=lambda item: item["record"]):
             record_id = sample["record"]
-            if not 0 <= record_id < len(records):
-                raise ValueError(f"Invalid zero-based record ID: {record_id}")
             record = records[record_id]
-            if (
-                sample["name"] != record["name"]
-                or sample["year"] != record["time"]["year"]
-                or datetime.fromisoformat(sample["target_time"])
-                != datetime.fromisoformat(record["time"]["iso_utc"])
-            ):
-                raise ValueError(f"Cache identity mismatch for record {record_id}")
             position = lookup.get(record_key(record))
             if position is None:
                 missing.append({"record": record_id, "key": record_key(record)})
@@ -148,7 +146,6 @@ def audit(csv_path, records_path, cache_path, seed=1):
                 matched.append({
                     "record": record_id, "source_row_zero_based": position,
                     "quality": sample["quality"], "current_dP": float(sample["dP"]),
-                    "source_dP": float(row["dP MOTIS"]),
                     "parameters": {key: float(row[key]) for key in (*COLUMNS, "T CDO")},
                 })
         summary = {
@@ -173,10 +170,6 @@ def audit(csv_path, records_path, cache_path, seed=1):
                 summary[f"source_{source_field}_vs_current_{current_field}"] = error_metrics(
                     old_values, current_values,
                 )
-        if matched:
-            current = np.array([pair["current_dP"] for pair in matched])
-            old = np.array([pair["source_dP"] for pair in matched])
-            summary["source_dP_vs_current_dP"] = error_metrics(old, current)
         result["splits"][split] = summary
     train_ids = {pair["record"] for pair in result["splits"]["train"]["pairs"]}
     validation_ids = {pair["record"] for pair in result["splits"]["validation"]["pairs"]}
@@ -187,13 +180,13 @@ def audit(csv_path, records_path, cache_path, seed=1):
         indices = [pair["source_row_zero_based"] for pair in pairs]
         matrix = features[indices]
         result["oracle_oof"] = {}
+        targets = np.array([pair["current_dP"] for pair in pairs])
         for name, columns in (("M5", MINIMAL_COLUMNS), ("M11", tuple(range(10)))):
-            result["oracle_oof"][name] = {}
-            for label in ("source_dP", "current_dP"):
-                targets = np.array([pair[label] for pair in pairs])
-                prediction, folds = oof_predictions(matrix[:, columns], targets, seed)
-                result["oracle_oof"][name][label] = error_metrics(prediction, targets)
-            result["oracle_oof"][name]["predicted_parameter_count"] = len(columns) + 1
+            prediction, folds = oof_predictions(matrix[:, columns], targets, seed)
+            result["oracle_oof"][name] = {
+                "current_dP": error_metrics(prediction, targets),
+                "predicted_parameter_count": len(columns) + 1,
+            }
         result["diagnostic_folds"] = [
             {"record": pair["record"], "fold": int(fold)} for pair, fold in zip(pairs, folds, strict=True)
         ]
@@ -202,7 +195,7 @@ def audit(csv_path, records_path, cache_path, seed=1):
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--csv", type=Path, required=True)
+    parser.add_argument("--csv", type=Path, required=True, help="Radiometric parameter table")
     parser.add_argument("--records", type=Path, default=Path("MOTIS_cyclone_records.json"))
     parser.add_argument("--cache", type=Path, default=Path("runs/h9dp/native500_v2_seed1"))
     parser.add_argument("--seed", type=int, default=1)
@@ -217,7 +210,6 @@ def main():
     print(json.dumps({
         "output": str(args.output), "source_rows": result["source_rows"],
         "matched": {key: value["matched"] for key, value in result["splits"].items()},
-        "paper_formula": result["paper_formula_vs_source_dP"],
         "oracle_oof": result.get("oracle_oof", {}),
     }, ensure_ascii=False, indent=2))
 

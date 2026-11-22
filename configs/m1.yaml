@@ -1,7 +1,7 @@
 data:
   cache_dir: runs/h9dp/native500_v2_seed1
   records: MOTIS_cyclone_records.json
-  motis_csv: /mnt/data/H9dP/reference/motis/260212/MOTIS_dataset_260212.csv
+  thermal_parameters_csv: /mnt/data/H9dP/reference/motis/260212/thermal_parameters.csv
   work_dir: /mnt/data/H9dP/runs/m1_seed1/data
 model:
   architecture: m1/v1

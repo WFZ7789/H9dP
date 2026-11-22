@@ -15,7 +15,12 @@ from h9dp.hsd import (
 )
 
 
-def synthetic_hsd(path, endian):
+def synthetic_hsd(path, endian, counts=None, *, band=8, start=60000.0):
+    if counts is None:
+        counts = np.full((8, 8), 1000)
+        counts[0, :3] = [65535, 65534, 0]
+    counts = counts.astype(endian + "u2")
+    height, width = counts.shape
     sizes = [282, 50, 127, 139, 147, 259, 47, 81, 75, 47, 259]
     blocks = [bytearray(length) for length in sizes]
     for number, block in enumerate(blocks, 1):
@@ -26,11 +31,12 @@ def synthetic_hsd(path, endian):
     basic[5] = 0 if endian == "<" else 1
     basic[6:16] = b"Himawari-9"
     basic[38:42] = b"R304"
-    struct.pack_into(endian + "ddd", basic, 46, 60000.0, 60000.001, 60000.002)
-    struct.pack_into(endian + "II", basic, 70, sum(sizes), 8 * 8 * 2)
-    struct.pack_into(endian + "HHH", data, 3, 16, 8, 8)
-    struct.pack_into(endian + "dIIffddd", projection, 3, 140.7, 20466275, 20466275, 4.5, 4.5, 42164.0, 6378.137, 6356.7523)
-    struct.pack_into(endian + "H", cal, 3, 8)
+    struct.pack_into(endian + "ddd", basic, 46, start, start + 0.001, start + 0.002)
+    struct.pack_into(endian + "II", basic, 70, sum(sizes), counts.nbytes)
+    struct.pack_into(endian + "HHH", data, 3, 16, width, height)
+    struct.pack_into(endian + "dIIffddd", projection, 3, 140.7, 20466275, 20466275,
+                     (width + 1) / 2, (height + 1) / 2, 42164.0, 6378.137, 6356.7523)
+    struct.pack_into(endian + "H", cal, 3, band)
     struct.pack_into(endian + "d", cal, 5, 10.0)
     struct.pack_into(endian + "HHH", cal, 13, 12, 65535, 65534)
     struct.pack_into(endian + "dd", cal, 19, 0.01, 0.0)
@@ -38,9 +44,6 @@ def synthetic_hsd(path, endian):
     struct.pack_into(endian + "ddd", cal, 83, 299792458.0, 6.62607015e-34, 1.380649e-23)
     segment[3:5] = bytes([1, 1])
     struct.pack_into(endian + "H", segment, 5, 1)
-    counts = np.full((8, 8), 1000, dtype=endian + "u2")
-    counts[0, 0], counts[0, 1] = 65535, 65534
-    counts[0, 2] = 0
     path.write_bytes(b"".join(blocks) + counts.tobytes())
     return path
 

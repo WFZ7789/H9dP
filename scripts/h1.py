@@ -11,6 +11,7 @@ from pathlib import Path
 import numpy as np
 import torch
 
+from h9dp.pressure_labels import read_catalog, verify_catalog_labels
 from h9dp.r1 import record_folds, scores, summarize_time
 from h9dp.r1_latitude import latitude_fields, latitude_kernel, native_r3_paths
 from scripts.v1 import bank
@@ -116,6 +117,8 @@ def fit(morph,names,blocks,latitude,gate,target,quality):
 def evaluate(args):
     rows_raw = (args.source/"all_meta.json").read_bytes()
     rows = json.loads(rows_raw)["records"]
+    catalog, catalog_digest = read_catalog()
+    verify_catalog_labels(rows, catalog)
     ids = np.array([r["record"] for r in rows])
     times = np.array([r["times"] for r in rows])
     digest = hashlib.sha256(rows_raw).hexdigest()
@@ -150,7 +153,7 @@ def evaluate(args):
             writer.writerows((1,k,ids[i],quality[i],y[i],pred[i]) for i in held)
             stream.flush()
             print(f"fold {k} {timing}",flush=True)
-    result = {"seed":1,"metrics":scores(y,pred,quality),"first_and_steady_s":trace,"torch":torch.__version__,
+    result = {"seed":1,"catalog_sha256":catalog_digest,"metrics":scores(y,pred,quality),"first_and_steady_s":trace,"torch":torch.__version__,
               "native_latitudes":int(np.isfinite(latitude[:,1,1]).sum()),"source_sha256":digest,"device":torch.cuda.get_device_name()}
     (args.output/"metrics.json").write_text(json.dumps(result,indent=2))
     print(result["metrics"])

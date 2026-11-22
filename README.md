@@ -4,7 +4,9 @@
 
 以六帧 HIMAWARI B08/B09/B10/B16 原分辨率影像估计 MOTIS dP。输入固定为 `[B,6,4,500,500]`，输出为 `[B]`，单位 hPa。直接读取 HSD 并定标，禁止使用 Satpy。原始归档与原始数据保留。
 
-**项目永久使用单一种子 [1](SEED)。** V1 在 546 条记录的五折评估中取得 Good / 全体 RMSE **6.932 / 8.901 hPa**，详见[V1 结果](docs/V1/README.md)。此前 R1 模型在 546 条记录上完成一次记录级 5 折评估，Good / 全体折外 RMSE 为 **7.45 / 8.96 hPa**。固定中心与追踪中心的可加响应 GP 等权平均，并使用可得的原生 R3 图像中心纬度。目标是从影像估计 MOTIS dP，Good < 5.9 hPa 仍待达到。见 [R1 协议](docs/R1/README.md)与[本轮结果](docs/R1/APERTURE_20261121.md)。以下为历史模型入口。
+中心气压和 dP 只取根目录的 MOTIS 目录表和可溯源的真实实测。MOTIS 中间参数可取其他来源，IBTrACS `USA_POCI` 可作环境气压。[压力来源规则](docs/data/PRESSURE_SOURCES_20261122.md)
+
+**主指标为全体记录的 dP RMSE（hPa），项目固定种子 1。** V1 在 546 条 Himawari 记录的五折开发评估中取得全体折外 RMSE **8.901 hPa**。Good、Fair、Poor 作为分组结果报告。[评估口径与已有结果](docs/EVALUATION.md) · [V1 报告](docs/V1/README.md) · [固定种子](SEED)
 
 命令行默认配置仍为历史 v2：六帧联合输入，2×2 像元重排为 250×250，随后 16 个卷积残差块始终保持 250×250 特征图，最后读出一个标量。不使用粗统计网格或提前的空间汇聚。实现说明见 [TRAINING_PLAN.md](docs/v2/TRAINING_PLAN.md)，配置见 [configs/train.yaml](configs/train.yaml)。
 

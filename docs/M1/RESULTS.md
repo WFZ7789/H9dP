@@ -20,7 +20,7 @@
 | 环境 | `fy3-aivis-v1`，Python 3.13，torch 2.13.0+cu132 |
 | GPU | NVIDIA GeForce RTX 5080，16 GB |
 | 数据缓存 | `runs/h9dp/native500_v2`（只读复用） |
-| MOTIS 表格 | `/mnt/data/H9dP/reference/motis/260212/MOTIS_dataset_260212.csv` |
+| MOTIS 中间参数 | 当时从公开表格精确配对。现在可用的投影仅含亮温、眼区参数和配对键，位于 `/mnt/data/H9dP/reference/motis/260212/thermal_parameters.csv`。 |
 | 工作数据 | `/mnt/data/H9dP/runs/m1/data` |
 | 运行产物 | `/mnt/data/H9dP/runs/m1/{dev,dev_lr1e-3,final}` |
 | 命令 | 见第 9 节 |

@@ -35,6 +35,7 @@ from h9dp.m1 import (
     M1Expert,
     metrics,
 )
+from h9dp.pressure_labels import read_catalog, verify_catalog_labels
 from scripts.audit_motis_inputs import audit
 
 MOTIS_COLUMNS = ("B24 dT", "B36 dT", "Eye size", "B33 dT tr.", "T CDO")
@@ -129,7 +130,7 @@ def prepare(config: dict) -> dict:
     cache = resolve(config, data["cache_dir"])
     work = resolve(config, data["work_dir"])
     work.mkdir(parents=True, exist_ok=True)
-    csv_path = resolve(config, data["motis_csv"])
+    csv_path = resolve(config, data["thermal_parameters_csv"])
     records_path = resolve(config, data["records"])
     report = audit(csv_path, records_path, cache)
     pairs = report["splits"]["train"]["pairs"]
@@ -208,6 +209,7 @@ def prepare(config: dict) -> dict:
                 "cache": str(cache),
                 "csv": str(csv_path),
                 "csv_sha256": report["inputs"]["csv"]["sha256"],
+                "catalog_sha256": report["catalog_sha256"],
                 "cache_fingerprint": read_json(cache / "index.json")["fingerprint"],
             },
             "records": meta_records,
@@ -217,7 +219,6 @@ def prepare(config: dict) -> dict:
     for fold in folds.values():
         summary["dev_fold_counts"][str(fold)] = summary["dev_fold_counts"].get(str(fold), 0) + 1
     summary["report"] = {
-        "paper_formula_vs_source_dP": report["paper_formula_vs_source_dP"],
         "oracle_oof": report.get("oracle_oof", {}),
     }
     write_json(work / "prepare_summary.json", summary)
@@ -568,6 +569,8 @@ def run_dev(config: dict) -> dict:
     output.mkdir(parents=True, exist_ok=True)
     device, environment = initialize_device(config)
     meta = read_json(work / "train_meta.json")
+    catalog, _ = read_catalog(resolve(config, config["data"]["records"]))
+    verify_catalog_labels(meta["records"], catalog)
     train_idx, holdout_idx = dev_indices(meta)
     mean, std = normalization(meta, train_idx)
     train_dataset = M1Dataset(work, "train", train_idx)
@@ -714,6 +717,8 @@ def run_final(config: dict) -> dict:
     device, environment = initialize_device(config)
     train_meta = read_json(work / "train_meta.json")
     validation_meta = read_json(work / "validation_meta.json")
+    catalog, _ = read_catalog(resolve(config, config["data"]["records"]))
+    verify_catalog_labels(train_meta["records"] + validation_meta["records"], catalog)
     train_idx = indices_with_parameters(train_meta)
     if len(train_idx) != len(train_meta["records"]):
         raise ValueError("Final training requires a parameter for every training record")

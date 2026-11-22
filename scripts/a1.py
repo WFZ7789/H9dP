@@ -12,6 +12,7 @@ import numpy as np
 import torch
 
 from h9dp.a1 import analog_basis, sequence_matches
+from h9dp.pressure_labels import read_catalog, verify_catalog_labels
 from h9dp.r1 import record_folds, scores
 from scripts.v1 import bank
 
@@ -67,6 +68,8 @@ def fit(morph,analog,names,target,quality):
 def evaluate(args):
     raw = (args.source/"all_meta.json").read_bytes()
     rows = json.loads(raw)["records"]
+    catalog, catalog_digest = read_catalog()
+    verify_catalog_labels(rows, catalog)
     ids = np.array([r["record"] for r in rows])
     digest = hashlib.sha256(raw).hexdigest()
     times = np.array([r["times"] for r in rows])
@@ -100,7 +103,7 @@ def evaluate(args):
             writer.writerows((1,k,ids[i],q[i],y[i],pred[i]) for i in held)
             stream.flush()
             print(f"fold {k} {timing}",flush=True)
-    result = {"seed":1,"metrics":scores(y,pred,q),"first_and_steady_s":trace,"torch":torch.__version__,
+    result = {"seed":1,"catalog_sha256":catalog_digest,"metrics":scores(y,pred,q),"first_and_steady_s":trace,"torch":torch.__version__,
               "source_sha256":digest,"device":torch.cuda.get_device_name()}
     (args.output/"metrics.json").write_text(json.dumps(result,indent=2))
     print(result["metrics"])

@@ -12,14 +12,18 @@ import numpy as np
 import torch
 
 from h9dp.e1_joint import aux_loss, condition_aux, pressure_loss
+from h9dp.pressure_labels import read_catalog, verify_catalog_labels
 from h9dp.r1 import record_folds, scores
 from scripts.v1 import bank
 
 
 def optimize(function, parameters, inputs, steps):
+    if steps < 1:
+        raise ValueError("At least one optimization step is required")
     compiled = torch.compile(function, fullgraph=True, dynamic=False)
     optimizer = torch.optim.Adam(parameters, lr=0.045)
     timings = []
+    loss = None
     for _ in range(steps):
         torch.cuda.synchronize()
         start = time.monotonic()
@@ -29,7 +33,7 @@ def optimize(function, parameters, inputs, steps):
         optimizer.step()
         torch.cuda.synchronize()
         timings.append(time.monotonic() - start)
-    if not torch.isfinite(loss):
+    if loss is None or not torch.isfinite(loss):
         raise ArithmeticError("Non-finite terminal training objective")
     return [timings[0], float(np.median(timings[1:]))]
 
@@ -116,13 +120,8 @@ def evaluate(args):
                 raise ValueError("Mismatched frame slots")
             groups.update({k: f[k] for k in keys})
             times = f["time"]
-    cat_raw = args.catalog.read_bytes()
-    catalog = json.loads(cat_raw)["records"]
-    if any(
-        (catalog[i]["name"], catalog[i]["time"]["year"], catalog[i]["dP"]) != (r["name"], r["year"], r["dP"])
-        for i, r in zip(ids, rows, strict=True)
-    ):
-        raise ValueError("Catalog records differ from the source")
+    catalog, catalog_digest = read_catalog(args.catalog)
+    verify_catalog_labels(rows, catalog)
     args.output.mkdir(exist_ok=False)
     os.environ.setdefault("TORCHINDUCTOR_CACHE_DIR", str(args.output.parent / "inductor"))
     os.environ.setdefault("TRITON_CACHE_DIR", str(args.output.parent / "triton"))
@@ -160,7 +159,7 @@ def evaluate(args):
         "first_and_steady_s": trace,
         "torch": torch.__version__,
         "source_sha256": digest,
-        "catalog_sha256": hashlib.sha256(cat_raw).hexdigest(),
+        "catalog_sha256": catalog_digest,
         "device": torch.cuda.get_device_name(),
     }
     (args.output / "metrics.json").write_text(json.dumps(result, indent=2))

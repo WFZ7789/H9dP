@@ -139,14 +139,16 @@ def test_nested_probe_has_no_permanent_holdout_or_outer_storm_leakage(tmp_path, 
     parameters = rng.normal(size=(48, 5))
     parameters[:, 4] = -70 + parameters[:, 4]
     target = design_matrix(parameters) @ np.array([50, 3, 6, 70, 3])
-    records = [{"record": i, "name": f"s{i // 4}", "storm_id": f"2020:s{i // 4}",
+    records = [{"record": i, "name": f"s{i // 4}", "storm_id": f"2020:s{i // 4}", "year": 2020,
                 "quality": ["Good", "Fair", "Poor"][i % 3], "origin": "synthetic", "missing_frames": 0,
                 "dP": float(target[i]), "params": parameters[i].tolist()}
                for i in range(48)]
     work = tmp_path / "data"
     work.mkdir()
     (work / "all_meta.json").write_text(json.dumps({"records": records, "counts": {"all": 48}}))
-    config = {"repository_root": str(tmp_path), "data": {"work_dir": str(work)},
+    catalog = [{**r, "time": {"year": r["year"]}} for r in records]
+    monkeypatch.setattr(m1_adapt, "read_catalog", lambda _: (catalog, "synthetic"))
+    config = {"repository_root": str(tmp_path), "data": {"work_dir": str(work), "records": "synthetic.json"},
               "training": {"seed": 1, "quality_weights": {"Good": 2, "Fair": 1, "Poor": 0.5}},
               "crossfit": {"outer_folds": 2, "inner_folds": 2, "ridge_alpha": 10}}
     monkeypatch.setattr(m1_adapt, "initialize_device", lambda config: (torch.device("cpu"), {}))

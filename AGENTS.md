@@ -17,6 +17,10 @@ Store large datasets and outputs outside the repository, preferably under
 
 ## Documentation & Experiment Reports
 
+- **模型评估、结果排序和选型以全体记录的 dP RMSE（hPa）为主指标。** 每条评估记录等权。
+  记录级交叉验证将所有折外预测汇总后统一计算 RMSE。Good、Fair、Poor 及温度等辅助指标用于
+  分组或诊断。报告在相同评估记录和协议内按全体 RMSE 排序。详见[评估口径](docs/EVALUATION.md)。
+
 - Put model plans, designs, training protocols, audits, and textual results under
   `docs/<model_name>/`; use `docs/` for genuinely shared documentation. Do NOT add
   these documents to the repository root. Root Markdown entry points are only
@@ -82,6 +86,17 @@ performance-critical components when justified by profiling. Keep interfaces
 between Python and C++ explicit. No formatter or linter is configured; record
 new tooling and its invocation when introduced. Satpy is FORBIDDEN.
 
+## Permanent Pressure Source Policy
+
+- **中心气压和降压 dP 只采信仓库根目录
+  [MOTIS_cyclone_records.json](MOTIS_cyclone_records.json) 和可溯源的真实实测。**
+  其他版本的 MOTIS、论文采用或插值气压、JMA BST 和其他最佳路径的中心气压及 dP
+  均不得用于训练、校准、验证、测试或作为报告依据。现有缓存的 MOTIS 标签须逐记录核对目录。
+- MOTIS 中间参数和其他字段的来源不受本条限制。IBTrACS `USA_POCI` 可以作为
+  单独标记的环境气压。用环境气压计算实测压差时，保留两端来源、时次及压力类型。
+- 删除违背本规则的现行处理入口、外部中心气压和 dP 标签文件及其派生库存。保留可溯源的真实观测、
+  原始卫星影像、合规的中间参数资料和符合规则的模型结果。
+
 ## Permanent Observation/Test-Set Policy
 
 **This is a permanent, project-wide rule for current and future collection,
@@ -131,10 +146,9 @@ estimates, and ancillary files without pressure; do not inflate their counts. Ne
 analyses as measured-pressure labels, truth, or substitutes to fill an observed
 sample quota. Preserve original measured station pressure, published sea-level
 pressure, quality flags, and observation times (JST must be converted to UTC).
-The previously approved IBTrACS USA_POCI and MOTIS/ERA5 POCI remain separately
-labelled environmental fields only; they must never generate or replace an
-observed pressure. Published adopted/interpolated labels are not raw measurements
-unless their original observation provenance is actually retrieved.
+IBTrACS USA_POCI remains a separately labelled environmental field and does not
+supply an observed pressure. Published adopted/interpolated labels require
+retrieval of the original observations before the measurements can be used.
 
 ## Testing Guidelines
 

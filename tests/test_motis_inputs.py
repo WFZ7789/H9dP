@@ -4,13 +4,16 @@ import json
 from pathlib import Path
 
 import numpy as np
+import pytest
 
+from h9dp import pressure_labels
 from scripts.audit_motis_inputs import (
     COLUMNS,
     audit,
     design_matrix,
     observation_key,
     oof_predictions,
+    read_thermal_rows,
     unique_lookup,
 )
 
@@ -18,7 +21,7 @@ from scripts.audit_motis_inputs import (
 def source_row(**changes):
     row = {
         "Name": "Example", "Year": "2020", "Date": "704", "Time": "425",
-        "Satellite": "AQUA", "T CDO": "-65", "dP MOTIS": "20", "npix": "16",
+        "Satellite": "AQUA", "T CDO": "-65", "npix": "16",
         **dict.fromkeys(COLUMNS, "0"),
     }
     row.update(changes)
@@ -64,7 +67,7 @@ def test_oof_is_reproducible_and_excludes_held_out_targets():
         oof_predictions(features[:2], target[:2])
 
 
-def test_audit_uses_zero_based_ids_and_exact_matching(tmp_path: Path):
+def test_audit_uses_zero_based_ids_and_exact_matching(tmp_path: Path, monkeypatch):
     import csv
 
     source = tmp_path / "source.csv"
@@ -74,11 +77,13 @@ def test_audit_uses_zero_based_ids_and_exact_matching(tmp_path: Path):
         writer.writerow(source_row())
     records = tmp_path / "records.json"
     record = {
-        "name": "Example", "satellite": "AQUA", "t_cdo": -64, "pixels": 25,
+        "name": "Example", "satellite": "AQUA", "t_cdo": -64, "pixels": 25, "quality": "Fair", "dP": 21,
         "time": {"year": 2020, "date_mmdd": 704, "time_utc_hhmm": 425,
                  "iso_utc": "2020-07-04T04:25:00Z"},
     }
-    records.write_text(json.dumps({"records": [record]}))
+    catalog = {"schema": "motis-cyclone-scan-records/v1", "records": [record]}
+    records.write_text(json.dumps(catalog))
+    monkeypatch.setattr(pressure_labels, "CATALOG_PATH", records)
     sample = {
         "record": 0, "name": "Example", "year": 2020,
         "target_time": "2020-07-04T04:25:00+00:00", "quality": "Fair", "dP": 21,
@@ -88,7 +93,7 @@ def test_audit_uses_zero_based_ids_and_exact_matching(tmp_path: Path):
     report = audit(source, records, tmp_path)
     assert report["splits"]["train"]["matched"] == 1
     assert report["splits"]["train"]["pairs"][0]["record"] == 0
-    assert report["splits"]["train"]["source_dP_vs_current_dP"]["rmse"] == 1
+    assert report["splits"]["train"]["pairs"][0]["current_dP"] == 21
     assert report["splits"]["train"]["non_null_current_field_counts"]["t_cdo"] == 1
     assert report["splits"]["train"]["source_T CDO_vs_current_t_cdo"]["rmse"] == 1
     assert report["splits"]["train"]["source_npix_vs_current_pixels"]["rmse"] == 9
@@ -96,7 +101,27 @@ def test_audit_uses_zero_based_ids_and_exact_matching(tmp_path: Path):
     # A one-minute gap remains missing; no nearest-pass matching is performed.
     record["time"]["time_utc_hhmm"] = 426
     record["time"]["iso_utc"] = "2020-07-04T04:26:00Z"
-    records.write_text(json.dumps({"records": [record]}))
+    records.write_text(json.dumps(catalog))
     sample["target_time"] = "2020-07-04T04:26:00+00:00"
     (tmp_path / "train.json").write_text(json.dumps([sample]))
     assert audit(source, records, tmp_path)["splits"]["train"]["matched"] == 0
+
+
+@pytest.mark.parametrize("field", ("dP MOTIS", "dP Obs", "POCI", "P MOTIS"))
+def test_motis_radiometry_projects_intermediate_parameters_only(tmp_path, field):
+    source = tmp_path / "external.csv"
+    row = source_row(**{field: "20", "B24 dT": "3.1"})
+    source.write_text(",".join(row) + "\n" + ",".join(row.values()) + "\n")
+    assert read_thermal_rows(source) == [source_row(**{"B24 dT": "3.1"})]
+
+
+def test_catalog_rejects_another_motis_file_and_changed_cached_dp(tmp_path):
+    catalog, _ = pressure_labels.read_catalog()
+    ref = catalog[0]
+    sample = {"record": 0, "name": ref["name"], "year": ref["time"]["year"],
+              "quality": ref["quality"], "dP": ref["dP"]}
+    pressure_labels.verify_catalog_labels([sample], catalog)
+    with pytest.raises(ValueError, match="differs from the MOTIS catalog"):
+        pressure_labels.verify_catalog_labels([{**sample, "dP": sample["dP"] + 0.1}], catalog)
+    with pytest.raises(ValueError, match="pressure labels must come from"):
+        pressure_labels.read_catalog(tmp_path / "MOTIS_cyclone_records.json")

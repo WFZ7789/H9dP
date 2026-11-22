@@ -12,6 +12,7 @@ import numpy as np
 import torch
 
 from h9dp.f1 import blocks, gram, objective
+from h9dp.pressure_labels import read_catalog, verify_catalog_labels
 from h9dp.r1 import record_folds, scores
 from h9dp.r1_latitude import latitude_fields, latitude_kernel, native_r3_paths
 
@@ -50,6 +51,8 @@ def fit(features,latitude,target,quality):
 def evaluate(args):
     raw = (args.source/"all_meta.json").read_bytes()
     rows = json.loads(raw)["records"]
+    catalog, catalog_digest = read_catalog()
+    verify_catalog_labels(rows, catalog)
     ids = np.array([r["record"] for r in rows])
     digest = hashlib.sha256(raw).hexdigest()
     with np.load(args.polar) as f:
@@ -82,7 +85,7 @@ def evaluate(args):
             writer.writerows((1,k,ids[i],q[i],y[i],pred[i]) for i in held)
             stream.flush()
             print(f"fold {k} {timing}",flush=True)
-    result = {"seed":1,"metrics":scores(y,pred,q),"first_and_steady_s":trace,"source_sha256":digest,
+    result = {"seed":1,"catalog_sha256":catalog_digest,"metrics":scores(y,pred,q),"first_and_steady_s":trace,"source_sha256":digest,
               "device":torch.cuda.get_device_name(),"torch":torch.__version__}
     (args.output/"metrics.json").write_text(json.dumps(result,indent=2))
     print(result["metrics"])

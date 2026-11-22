@@ -37,6 +37,7 @@ from h9dp.hsd import (
     lonlat_to_pixel,
     read_header,
 )
+from h9dp.pressure_labels import read_catalog
 
 BANDS = (8, 9, 10, 16)
 FRAME_OFFSETS_MINUTES = (-300, -180, -60, -30, -10, 0)
@@ -101,13 +102,6 @@ def array_paths(directory: Path, position: int) -> tuple[Path, Path]:
     return directory / "brightness" / f"{position:04d}.npy", directory / "validity" / f"{position:04d}.npy"
 
 
-def load_json(path: Path) -> dict:
-    try:
-        return json.loads(path.read_text())
-    except (OSError, json.JSONDecodeError) as error:
-        raise ValueError(f"Cannot read JSON {path}: {error}") from error
-
-
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--labels", type=Path, default=Path("MOTIS_cyclone_records.json"))
@@ -120,7 +114,7 @@ def main() -> None:
     removed = sorted(name for name in os.environ if "proxy" in name.lower())
     print(f"Proxy variables removed from AWS CLI children: {removed or 'none'}", flush=True)
 
-    labels = load_json(args.labels)["records"]
+    labels, _ = read_catalog(args.labels)
     selected = [
         (index, record)
         for index, record in enumerate(labels)

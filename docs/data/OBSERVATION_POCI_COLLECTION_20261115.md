@@ -8,14 +8,11 @@
 已有训练/验证/测试气旋及与训练记录相隔 ≤6 h 的观测均可纳入，不因这些 tag 而降级或判为无效。
 
 以下下载统计和旧工具审计只保留为失败过程记录，不表示实测集验收通过。
-原始字节和历史源码快照保留，目录另加 `REJECTED.json`，不改写不可变历史快照。
+原始站点观测与采集记录保留，目录含 `REJECTED.json`。旧外部 MOTIS 压力库存及生成它的审计快照已删除。
 **原始数据采集曾完成，但有用的中心气压实测集尚未完成。**
 本次没有训练或评估模型，没有中心气压误差成绩，也没有 eager/compiled 训练对比。
 
-用户认可两种 POCI 来源：IBTrACS `USA_POCI` 和原 MOTIS 使用的 ERA5 POCI。
-两者均保留来源，不因来源不同而判为错误，也不把它们无标记地合并成同一个字段。
-本次新增站点配对采用 `USA_POCI`；另行整理原 MOTIS 观测约束标签及其 ERA5 POCI，
-其中能匹配到 IBTrACS 的记录同时保留两种值。
+站点配对采用 IBTrACS `USA_POCI`。现行压力来源规定见[清理记录](PRESSURE_SOURCES_20261122.md)。
 
 **站点实测海平面气压不自动等于气旋中心气压。** 历史 50 条不计作交付的有用实测记录，
 也不能据此宣称最终成果的中心气压精度；这与气旋是否出现在训练集中无关。
@@ -47,14 +44,6 @@
 2021 年 11、2022 年 6、2024 年 4。查询范围不代表每个年份都有入选记录；本批没有
 2023/2025 年入选记录。设定目标上限为 100 条，但不放宽配对或时间间隔标准来凑数。
 
-另行整理原 MOTIS 的 **16 条** 2015–2025 年 WP、`dP Obs` 非空记录：
-
-- 15 条属于现有 `MOTIS_cyclone_records.json` 中已出现的气旋。这只是 tag，不影响纳入实测集或其结果有效性；此前把气旋重合作为否决理由是错误的，已撤销。
-- 13 条匹配到满足同年同名、≤3 h、≤100 km 条件的 IBTrACS POCI，同时保留两种 POCI。
-- 其余 3 条的 IBTrACS 配对字段留空，不填默认值、不编造配对。
-- `dP Obs` 是论文采用的观测约束标签，可能包含飞机/地面观测、雷达估计及时间插值；
-  不能把这 16 条统一称为原始传感器读数，亦不与新增 50 条站点候选混成一组真值。
-
 ## 来源与字段
 
 ### 1. 新增实测气压
@@ -82,23 +71,6 @@ SLP 数值按原格式从 0.1 hPa 换算为 hPa，只接受质量码 `1`/`5`，�
 POCI 保留 IBTrACS 提供的分析值，不通过站点气压反推，不设为固定的 1010 hPa。
 采集器不对 POCI 再做插值；但 IBTrACS 上游本身可能已经对 3 h 记录插值/沿用分析值，
 所以不能据此声称每个值都来自原始 ATCF 报文中的独立分析。
-
-### 3. 原 MOTIS ERA5 POCI
-
-原表：<https://doi.org/10.5281/zenodo.22224266>，版本 `260212`。
-已存在的不可变来源保留在：
-
-```text
-/mnt/data/H9dP/reference/motis/260212/MOTIS_dataset_260212.csv
-```
-
-论文方法是在最近整点、0.25° ERA5 海平面气压场上，以 **0.1 hPa** 间隔计算等压线，
-取得最外围闭合等压线压力。**本次读取已发布表格中的值，没有重新下载 ERA5 或重算等压线。**
-
-MOTIS 库存表保留 `poci_motis_era5_hpa`、`dp_motis_adopted_hpa`、
-`pc_motis_adopted_hpa = poci_motis_era5_hpa - dp_motis_adopted_hpa`。
-可匹配时另列 `poci_ibtracs_hpa`、相应时间及 SID。若以后改用 IBTrACS POCI 构造目标，
-应从同一个绝对中心气压重新计算 dP，不能把原 ERA5 定义的 `dP Obs` 无改动配给新的 POCI。
 
 ## 当时执行的失败协议（非现行准则）
 
@@ -138,11 +110,6 @@ PYTHONPATH=src MKL_THREADING_LAYER=GNU \
   --output /mnt/data/H9dP/datasets/surface_poci_2016_2025_20261115 \
   --count 100 --max-station-years 100 --workers 8
 
-# 纯离线审计，并单独整理 MOTIS adopted-pressure 库存。
-PYTHONPATH=src /home/debian/miniconda3/envs/fy3-aivis-v1/bin/python \
-  -m scripts.audit_surface_poci \
-  --collection /mnt/data/H9dP/datasets/surface_poci_2016_2025_20261115 \
-  --motis-csv /mnt/data/H9dP/reference/motis/260212/MOTIS_dataset_260212.csv
 ```
 
 采集完成时间：**2026-11-15 03:29:31 UTC**。首次离线工具审计完成时间：03:36:31 UTC。
@@ -153,9 +120,7 @@ PYTHONPATH=src /home/debian/miniconda3/envs/fy3-aivis-v1/bin/python \
   raw/                              原始 CSV 及每个来源的 .json 元数据
   all_surface_poci_pairs.csv         105 条原始有效配对
   review_candidates.csv             50 条待审核候选，不是冻结最终测试集
-  motis_adopted_wp_2015_2025.csv      16 条原论文采用标签，单独保存
   manifest.json                     查询参数、种子、统计与使用限制
-  audit.json                        哈希、去重、气旋排除、时差/距离/间隔审计
   failures.json                     4 个 404
   excluded_exposed_cyclones.json     排除的 68 个 SID
   collection.log                    实际采集日志

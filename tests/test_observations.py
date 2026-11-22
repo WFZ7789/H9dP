@@ -17,7 +17,7 @@ from h9dp.observations import (
     select_pairs,
     track_at,
 )
-from scripts.audit_surface_poci import audit, inventory_motis_adopted, read_json
+from scripts.audit_surface_poci import audit, read_json
 
 
 def csv_text(rows):
@@ -156,22 +156,7 @@ def test_surface_screening_rejects_weak_dp_and_deduplicates_physical_observation
 def test_offline_audit_rejects_the_failed_legacy_collection(tmp_path):
     (tmp_path / "manifest.json").write_text("{}")
     with pytest.raises(ValueError, match="Rejected legacy"):
-        audit(tmp_path, tmp_path / "unused.csv", tmp_path / "unused.json")
-
-
-def test_motis_inventory_keeps_both_poci_sources_and_adopted_label_caveat(tmp_path):
-    row = {"Region": "WP", "dP Obs": "75", "Year": "2020", "Date": "801", "Time": "0",
-           "POCI": "1010", "Lat": "25", "Lon": "130", "Name": "Example", "Eye clarity": "Good"}
-    source = tmp_path / "motis.csv"
-    source.write_text(csv_text([row, {**row, "dP Obs": ""}, {**row, "Year": "2014"}]).getvalue())
-    entries = inventory_motis_adopted(source, {"storm1": [track()]}, {(2020, "example")})
-    assert len(entries) == 1
-    assert entries[0]["poci_motis_era5_hpa"] == 1010
-    assert entries[0]["poci_ibtracs_hpa"] == 1008
-    assert entries[0]["pc_motis_adopted_hpa"] == 935
-    assert entries[0]["time_utc"] == "2020-08-01T00:00:00Z"
-    assert entries[0]["already_in_existing_cyclone_inventory"] is True
-    assert entries[0]["is_raw_observation"] is False
+        audit(tmp_path, tmp_path / "unused.json")
 
 
 def test_json_audit_errors_have_source_context(tmp_path):

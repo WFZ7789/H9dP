@@ -1,4 +1,4 @@
-"""Read six-frame records and save V1 polar descriptors outside Git."""
+"""Extract six-scan Himawari descriptors and save them outside Git."""
 
 import argparse
 import hashlib
@@ -9,14 +9,29 @@ from pathlib import Path
 import numpy as np
 
 from h9dp.a1 import sequence as field_sequence
-from h9dp.h1 import sequence as column_sequence
+from h9dp.cdo_ring import sequence as cdo_sequence
 from h9dp.e1 import sequence as isotherm_sequence
+from h9dp.eye_cdo import sequence as pixel_sequence
+from h9dp.eye_sampling import sequence as sampling_sequence
+from h9dp.h1 import sequence as column_sequence
 from h9dp.v1 import sequence as rotation_sequence
+from h9dp.w1 import sequence as radiance_sequence
+
+SEQUENCES = {
+    "rotation": rotation_sequence,
+    "isotherms": isotherm_sequence,
+    "field": field_sequence,
+    "column": column_sequence,
+    "radiance": radiance_sequence,
+    "cdo": cdo_sequence,
+    "sampling": sampling_sequence,
+    "eye_cdo": pixel_sequence,
+}
 
 
 def initialize(source, mode):
     global images, masks, sequence
-    sequence = {"isotherms": isotherm_sequence, "rotation": rotation_sequence, "column": column_sequence, "field": field_sequence}[mode]
+    sequence = SEQUENCES[mode]
     images, masks = [np.load(source / f"all_{name}.npy", mmap_mode="r") for name in ("images", "masks")]
 
 
@@ -47,6 +62,6 @@ if __name__ == "__main__":
     p = argparse.ArgumentParser(description=__doc__)
     p.add_argument("--source", type=Path, required=True)
     p.add_argument("--output", type=Path, required=True)
-    p.add_argument("--mode", choices=("rotation", "isotherms", "field", "column"), default="rotation")
+    p.add_argument("--mode", choices=SEQUENCES, default="rotation")
     a = p.parse_args()
     prepare(a.source, a.output, a.mode)

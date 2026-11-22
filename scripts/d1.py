@@ -12,6 +12,7 @@ import numpy as np
 import torch
 
 from h9dp.d1_metric import coordinates, kernel_parts, solve_stage, update_metric
+from h9dp.pressure_labels import read_catalog, verify_catalog_labels
 from h9dp.r1 import record_folds, scores
 
 GROUPS = ("core", "cloud", "contrast", "scene")
@@ -55,7 +56,6 @@ def evaluate(features, source, catalog, output):
         raise RuntimeError("D1 formal fit requires CUDA")
     torch.manual_seed(1)
     torch._dynamo.config.suppress_errors = False
-    output.mkdir(exist_ok=False)
     os.environ.setdefault("TORCHINDUCTOR_CACHE_DIR", str(output.parent / "inductor"))
     os.environ.setdefault("TRITON_CACHE_DIR", str(output.parent / "triton"))
     raw = (source / "all_meta.json").read_bytes()
@@ -70,19 +70,10 @@ def evaluate(features, source, catalog, output):
             raise ValueError("D1 descriptors differ from the source")
         groups = [f[k] for k in GROUPS]
         frames = int(f["valid"].sum())
-    cat_bytes = catalog.read_bytes()
-    entries = json.loads(cat_bytes)["records"]
+    entries, catalog_digest = read_catalog(catalog)
+    verify_catalog_labels(rows, entries)
     y = np.array([r["dP"] for r in rows])
     quality = np.array([r["quality"] for r in rows])
-    for r in rows:
-        ref = entries[r["record"]]
-        if (ref["name"], ref["quality"], ref["dP"], ref["time"]["year"]) != (
-            r["name"],
-            r["quality"],
-            r["dP"],
-            r["year"],
-        ):
-            raise ValueError("Current MOTIS catalog and record cache differ")
     fold = record_folds(len(ids), 5, 1)
     pred = np.full(len(ids), np.nan)
     trace = []
@@ -95,11 +86,12 @@ def evaluate(features, source, catalog, output):
         "rank": 56,
         "features": str(features.resolve()),
         "source_sha256": hashlib.sha256(raw).hexdigest(),
-        "catalog_sha256": hashlib.sha256(cat_bytes).hexdigest(),
+        "catalog_sha256": catalog_digest,
         "torch": torch.__version__,
         "device": torch.cuda.get_device_name(),
         "execution": "CUDA FP64 torch.compile fullgraph; eager prediction",
     }
+    output.mkdir(exist_ok=False)
     (output / "run.json").write_text(json.dumps(run, indent=2))
     with (output / "predictions.csv").open("x", newline="") as stream:
         writer = csv.writer(stream)

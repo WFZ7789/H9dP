@@ -11,16 +11,17 @@ from pathlib import Path
 import numpy as np
 import torch
 
+from h9dp.pressure_labels import read_catalog, verify_catalog_labels
 from h9dp.r1 import _normalize, record_folds, scores, summarize_time
 
 
-def embedding(frames, t, valid, train, order):
+def embedding(frames, t, valid, train, order, *, device="cuda"):
     # Only training scans determine the radiometric scale of a sector or radius.
     n = len(train)
     fit = frames[train].reshape(-1, frames.shape[-1])
     a, b = _normalize(fit, frames[order[n:]].reshape(-1, frames.shape[-1]))
     x = np.concatenate((a, b)).reshape(len(order) * 6, -1)
-    x = torch.as_tensor(x, dtype=torch.float32, device="cuda")
+    x = torch.as_tensor(x, dtype=torch.float32, device=device)
     dot = x @ x.T / x.shape[1]
     d = (dot.diag()[:, None] + dot.diag()[None, :] - 2 * dot).clamp_min(0)
     weights = np.where(valid, np.exp((t - np.max(np.where(valid, t, -np.inf), axis=1)[:, None]) / 180), 0)
@@ -35,9 +36,10 @@ def embedding(frames, t, valid, train, order):
     return out
 
 
-def bank(groups, times, train, held):
+def bank(groups, times, train, held, *, valid=None, device="cuda"):
     order = np.r_[train, held]
-    valid = np.isfinite(groups["eye"]).any(-1)
+    if valid is None:
+        valid = np.isfinite(groups["eye"]).any(-1)
     basis, names = [], []
     for name, frames in groups.items():
         stats = summarize_time(frames, times, valid)
@@ -45,7 +47,7 @@ def bank(groups, times, train, held):
             a, b = _normalize(features[train], features[held])
             if not a.shape[1]:
                 continue
-            x = torch.as_tensor(np.concatenate((a, b)), dtype=torch.float64, device="cuda")
+            x = torch.as_tensor(np.concatenate((a, b)), dtype=torch.float64, device=device)
             dot = x @ x.T / x.shape[1]
             d = (dot.diag()[:, None] + dot.diag()[None, :] - 2 * dot).clamp_min(0)
             r = (3 * d + 1e-12).sqrt()
@@ -59,7 +61,7 @@ def bank(groups, times, train, held):
                     basis.append(phi @ phi.T / x.shape[1])
                     names.append(f"{name}_spline_{width}")
         if name in ("sector", "waves"):
-            basis.extend(embedding(frames, times, valid, train, order))
+            basis.extend(embedding(frames, times, valid, train, order, device=device))
             names.extend(f"{name}_sequence_{i}" for i in range(3))
     return torch.stack(basis), names
 
@@ -118,13 +120,14 @@ def fit(basis, names, y, quality):
 
 
 def evaluate(source, features, output):
-    output.mkdir(exist_ok=False)
     os.environ.setdefault("TORCHINDUCTOR_CACHE_DIR", str(output.parent / "inductor"))
     os.environ.setdefault("TRITON_CACHE_DIR", str(output.parent / "triton"))
     torch._dynamo.config.suppress_errors = False
     torch.manual_seed(1)
     raw = (source / "all_meta.json").read_bytes()
     rows = json.loads(raw)["records"]
+    catalog, catalog_digest = read_catalog()
+    verify_catalog_labels(rows, catalog)
     with np.load(features) as f:
         ids, times = f["record"], f["time"]
         groups = {k: f[k] for k in ("eye", "wall", "relief", "waves", "motion", "sector")}
@@ -134,6 +137,7 @@ def evaluate(source, features, output):
             or len(set(ids)) != len(ids)
         ):
             raise ValueError("Feature provenance differs from source")
+    output.mkdir(exist_ok=False)
     y, quality = np.array([r["dP"] for r in rows]), np.array([r["quality"] for r in rows])
     fold = record_folds(len(rows), 5, 1)
     pred = np.full_like(y, np.nan)
@@ -152,6 +156,7 @@ def evaluate(source, features, output):
             print(f"fold {k} time {duration}", flush=True)
     result = {
         "seed": 1,
+        "catalog_sha256": catalog_digest,
         "metrics": scores(y, pred, quality),
         "first_and_steady_s": timing,
         "torch": torch.__version__,

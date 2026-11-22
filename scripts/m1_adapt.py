@@ -31,7 +31,8 @@ from h9dp.m1_adapt import (
     normalization,
     quality_weights,
 )
-from scripts.audit_motis_inputs import record_key, unique_lookup
+from h9dp.pressure_labels import read_catalog, verify_catalog_labels
+from scripts.audit_motis_inputs import read_thermal_rows, record_key, unique_lookup
 from scripts.m1 import (
     MOTIS_COLUMNS,
     M1Dataset,
@@ -52,9 +53,8 @@ def prepare(config: dict) -> dict:
         raise FileExistsError(f"Prepared dataset already exists: {work}")
     cache = resolve(config, data["cache_dir"])
     new_root = resolve(config, data["new_cache_dir"])
-    source_records = read_json(resolve(config, data["records"]))["records"]
-    with resolve(config, data["motis_csv"]).open(encoding="utf-8-sig", newline="") as stream:
-        source_rows = list(csv.DictReader(stream))
+    source_records, catalog_digest = read_catalog(resolve(config, data["records"]))
+    source_rows = read_thermal_rows(resolve(config, data["thermal_parameters_csv"]))
     lookup = unique_lookup(source_rows)
     old = cast(list[dict], read_json(cache / "train.json")) + cast(list[dict], read_json(cache / "validation.json"))
     new = read_json(new_root / "index.json")
@@ -132,6 +132,7 @@ def prepare(config: dict) -> dict:
         array.flush()
     payload = {
         "schema": "m1-adapt-data/v1", "records": records, "config": config,
+        "catalog_sha256": catalog_digest,
         "protocol": "all available old/new records; no permanent holdout; new center 500 crop",
         "counts": {
             "all": count, "paired": sum(r["params"] is not None for r in records),
@@ -272,6 +273,8 @@ def probe(config: dict, directory: Path, epochs: int) -> dict:
     directory.mkdir(parents=True, exist_ok=True)
     cache = resolve(config, config["data"]["work_dir"])
     meta = read_json(cache / "all_meta.json")
+    catalog, _ = read_catalog(resolve(config, config["data"]["records"]))
+    verify_catalog_labels(meta["records"], catalog)
     records = meta["records"]
     identity = hashlib.sha256(json.dumps({"config": config, "meta": meta}, sort_keys=True).encode()).hexdigest()
     manifest = directory / "run.json"

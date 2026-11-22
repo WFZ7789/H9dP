@@ -18,10 +18,10 @@ def offsets():
     return np.stack((RADII[:, None] * np.sin(angle), RADII[:, None] * np.cos(angle)))
 
 
-def polar_scan(image, mask, xy):
+def polar_scan(image, mask, xy, *, grid=None):
     center = tuple(np.rint(np.asarray(xy)[::-1] - 0.5).astype(int))
     eye, _ = locate(image, mask, center)
-    points = offsets() + np.asarray(eye)[:, None, None]
+    points = (offsets() if grid is None else grid) + np.asarray(eye)[:, None, None]
     support = map_coordinates(mask.astype(np.float32), points, order=1)
     values = np.stack([map_coordinates(band, points, order=1, output=np.float32) for band in image])
     return np.where(support[None] >= 0.999, values * 0.01 + 150.0, np.nan)
@@ -67,6 +67,10 @@ def sequence(image, mask, centers, times):
     ring = np.full((6, 4, len(RADII), ANGLES), np.nan)
     for j in usable:
         ring[j] = polar_scan(image[j], mask[j], centers[j])
+    return describe_sequence(ring, usable, times)
+
+
+def describe_sequence(ring, usable, times, *, include_motion=True):
     spectra = np.concatenate((ring, np.diff(ring, axis=1), ring[:, 3:4] - ring[:, :1]), axis=1)
     # Partial rings may supply radiometry but never a spurious Fourier/rotation signal.
     support = np.isfinite(spectra).sum(-1) >= ANGLES * 0.65
@@ -79,20 +83,14 @@ def sequence(image, mask, centers, times):
     )
     # Raw broad-sector absolute temperatures preserve the orientation of asymmetric clouds.
     sector = ring[:, :, 4:].reshape(6, 4, -1, 12, 8).mean(-1)
-    motion = np.full((6, (len(RADII) - 3) * 4), np.nan)
-    for a, b in itertools.pairwise(usable):
-        minutes = times[b] - times[a]
-        if 0 < minutes <= 130:
-            motion[b] = angular_motion(ring[a], ring[b], minutes)
     delta = quant[:, :, :8, :] - quant[:, :, 9:12, 0].mean(2)[:, :, None, None]
-    return {
-        key: v.reshape(6, -1).astype(np.float32)
-        for key, v in {
-            "eye": quant[:, :, :8],
-            "wall": quant[:, :, 8:],
-            "relief": delta,
-            "waves": harmonics,
-            "sector": sector,
-            "motion": motion,
-        }.items()
-    }
+    groups = {"eye": quant[:, :, :8], "wall": quant[:, :, 8:], "relief": delta,
+              "waves": harmonics, "sector": sector}
+    if include_motion:
+        motion = np.full((6, (len(RADII) - 3) * 4), np.nan)
+        for a, b in itertools.pairwise(usable):
+            minutes = times[b] - times[a]
+            if 0 < minutes <= 130:
+                motion[b] = angular_motion(ring[a], ring[b], minutes)
+        groups["motion"] = motion
+    return {name: values.reshape(6, -1).astype(np.float32) for name, values in groups.items()}

@@ -19,6 +19,7 @@ from torch import nn
 from h9dp.engine import compile_model, initialize_device, seed_everything
 from h9dp.m1 import EXPERTS, metrics
 from h9dp.m1_adapt import JointM1, joint_loss, normalization, quality_weights
+from h9dp.pressure_labels import read_catalog, verify_catalog_labels
 from scripts.m1 import (
     M1Dataset,
     build_expert,
@@ -134,6 +135,8 @@ def run(source: Path, destination: Path, epochs: int, source_epoch: int, lr: flo
         raise ValueError("Invalid joint training settings")
     work = resolve(config, config["data"]["work_dir"])
     meta = read_json(work / "all_meta.json")
+    catalog, _ = read_catalog(resolve(config, config["data"]["records"]))
+    verify_catalog_labels(meta["records"], catalog)
     records = meta["records"]
     identity = {"source": str(source), "source_identity": parent["identity"],
                 "source_epoch": source_epoch, "learning_rate": lr, "parameter_weight": parameter_weight}

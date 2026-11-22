@@ -62,7 +62,7 @@
 
 对可加 / half 的三个复验种子，将逐记录误差记作 `e[i,s]`。Good 上的平均 MSE **57.56 hPa²** 可分成 `mean_i(mean_s(e)^2)` = **54.83** 和 `mean_i(var_s(e))` = **2.73**。即约 **95%** 来自在三种划分下仍保留的逐记录偏差，而非这三次划分间的波动。它**不是不可约噪声**。按平均误差绝对值排序，22 条 Good 记录占这部分平方误差的 **44.9%**；没有把这些记录剔除。
 
-只读后验检查（`residual_followup.py`，不参与预测或训练）：按原始目录中 MOTIS `pixels` 在 211 条 Good 内的四分位分组（切点 34、88、204），三个 OOF 预测先逐记录平均，四组 RMSE 从小眼像元数到大依次为 **8.29、7.81、7.09、6.29 hPa**。此字段不是 AHI 原生眼半径，结果只是关联。最大的持续误差是 record 188：模型均值 83.39，当前标签 102.4，精确键匹配的 `260212` 旧 MOTIS 值为 102.3 hPa。这一例不能简单归咎于两个标签版本不一致；两个 MOTIS 值也都不是现场气压。
+只读后验检查：按原始目录中 MOTIS `pixels` 在 211 条 Good 内的四分位分组（切点 34、88、204），三个 OOF 预测先逐记录平均，四组 RMSE 从小眼像元数到大依次为 **8.29、7.81、7.09、6.29 hPa**。此字段不是 AHI 原生眼半径，结果只是关联。最大的持续误差是 record 188：模型均值 83.39，当前标签 102.4 hPa。
 
 ### 合成机制检查：从六帧里挑最暖的一帧，够不够？
 
@@ -81,7 +81,7 @@
 
 正常用户，Conda `fy3-aivis-v1`，Python 3.13.15、torch 2.13.0+cu132、RTX 5080。正式拟合均 `torch.compile(fullgraph=True)` + CUDA FP64；后验预测 eager FP64，配对与诊断为 CPU NumPy，无 eager 训练回退。首个 tracked 补跑的首步 **4.13 s**（含编译/启动），稳态中位 **12.19 ms/步**；`additive_xy` 对应 **3.41 s / 12.25 ms**。后续重复命中缓存，不能把缓存命中当作零冷启动。耗时为同步优化步，不含 CPU 特征准备。每折两个拟合的首步和稳态时间均见该运行 `metrics.json`。
 
-外部产物：`/mnt/data/H9dP/runs/r1/iteration_20261120/`。GP 目录有 `run.json`、逐折状态、`predictions.csv` 和 `metrics.json`；`paired/{base,column,additive,visibility,rep_none,rep_additive}/` 有最终配对预测、各组 RMSE/MAE/Bias 和误差分解。`residual_followup.{py,json}` 留存后验核查及完整排序，`validation.log` 留存检查输出。未更改旧缓存、旧运行或目录标签。
+外部产物：`/mnt/data/H9dP/runs/r1/iteration_20261120/`。GP 目录有 `run.json`、逐折状态、`predictions.csv` 和 `metrics.json`；`paired/{base,column,additive,visibility,rep_none,rep_additive}/` 有最终配对预测、各组 RMSE/MAE/Bias 和误差分解。`validation.log` 留存检查输出。含外部 MOTIS 压差的后验审计已删除。[压力来源清理](../data/PRESSURE_SOURCES_20261122.md)
 
 实际命令的等价循环如下（仓库根目录；复跑时设 `R` 为新的外部目录，避免覆盖）。使用 `-m scripts.…`：直接运行文件时 `scripts/h9dp.py` 会遮蔽 `src/h9dp`；第一次启动因此在导入阶段退出，未生成拟合结果。
 

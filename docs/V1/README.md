@@ -1,6 +1,6 @@
 # V1 极坐标云图与运动估计
 
-**Good 折外 RMSE 为 6.932 hPa，全体为 8.901 hPa。** 2026-11-21，固定种子 1，546 条真实 Himawari 记录做记录级五折，每条预测一次，目标为 MOTIS dP。Good 的目标为低于 5.9 hPa。独立现场气压与未来业务精度仍待检验。
+**全体折外 RMSE 为 8.901 hPa。** 2026-11-21，固定种子 1，546 条真实 Himawari 记录做记录级五折，每条预测一次，目标为 MOTIS dP。独立现场气压与未来业务精度仍待检验。[现行评估口径](../EVALUATION.md)
 
 | 分组 | 记录 | RMSE（hPa） | MAE（hPa） | 偏差（预测减目标，hPa） |
 |---|---:|---:|---:|---:|
@@ -23,5 +23,7 @@ export PYTHONPATH=src:. MKL_THREADING_LAYER=GNU OMP_NUM_THREADS=2
 OPENBLAS_NUM_THREADS=1 python -um scripts.prepare_v1 --source "$S" --output "$R/features.npz"
 OPENBLAS_NUM_THREADS=2 python -um scripts.v1 --source "$S" --features "$R/features.npz" --output "$R/formal"
 ```
+
+Release 展板：[Sinlaku（2026）10 分钟降压与推算气压展板](SINLAKU_POSTER_20261122.md)
 
 [文档索引](../README.md)

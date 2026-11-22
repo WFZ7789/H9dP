@@ -166,22 +166,27 @@ def scores(y: np.ndarray, prediction: np.ndarray, quality: np.ndarray) -> dict:
     return result
 
 
-def _normalize(train: np.ndarray, evaluate: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
-    """Training-only scaling; zero means missing after centering, not a physical temperature."""
+def _normalization_state(train: np.ndarray) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
+    """Return training-only column indices, means and scales."""
     finite = np.isfinite(train)
     count = finite.sum(axis=0)
     keep = count >= max(3, math.ceil(len(train) * 0.15))
-    train, evaluate, finite, count = train[:, keep], evaluate[:, keep], finite[:, keep], count[keep]
-    if not len(count):
-        return train, evaluate
+    train, finite, count = train[:, keep], finite[:, keep], count[keep]
     mean = np.where(finite, train, 0).sum(axis=0) / count
     residual = np.where(finite, train - mean, 0)
     scale = np.sqrt((residual ** 2).sum(axis=0) / count).clip(0.05)
+    return np.flatnonzero(keep), mean, scale
 
-    def transform(x):
-        return np.where(np.isfinite(x), np.clip((x - mean) / scale, -5.0, 5.0), 0.0)
 
-    return transform(train), transform(evaluate)
+def _apply_normalization(values, columns, mean, scale):
+    x = values[:, columns]
+    return np.where(np.isfinite(x), np.clip((x - mean) / scale, -5.0, 5.0), 0.0) if columns.size else x
+
+
+def _normalize(train: np.ndarray, evaluate: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
+    """Training-only scaling; zero means missing after centering, not a physical temperature."""
+    state = _normalization_state(train)
+    return _apply_normalization(train, *state), _apply_normalization(evaluate, *state)
 
 
 def kernel_components(groups: dict[str, np.ndarray], train: np.ndarray, evaluate: np.ndarray) -> dict:

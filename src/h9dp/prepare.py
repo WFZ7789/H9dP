@@ -2,29 +2,39 @@
 
 from __future__ import annotations
 
-import csv
 import copy
+import csv
 import hashlib
+import itertools
 import json
 import math
 import os
 import time
 from collections import Counter, defaultdict
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 
 import numpy as np
 
 from .common import check_space, fingerprint, write_json
-from .hsd import BANDS, brightness_temperature, crop_window, earth_mask, lonlat_to_pixel, read_counts, read_header
+from .hsd import (
+    BANDS,
+    brightness_temperature,
+    crop_window,
+    earth_mask,
+    lonlat_to_pixel,
+    read_counts,
+    read_header,
+)
+from .pressure_labels import read_catalog, verify_catalog_labels
 
 SCHEMA = "h9dp-native500-cache/v2"
 LEGACY_SCHEMA = "h9dp-native500-cache/v1"
 
 
 def parse_time(value: str) -> datetime:
-    result = datetime.fromisoformat(value.replace("Z", "+00:00"))
-    return result.replace(tzinfo=timezone.utc) if result.tzinfo is None else result.astimezone(timezone.utc)
+    result = datetime.fromisoformat(value)
+    return result.replace(tzinfo=UTC) if result.tzinfo is None else result.astimezone(UTC)
 
 
 def resolve_source(root: Path, value: str) -> Path:
@@ -71,10 +81,11 @@ def split_for(record: int, year: int, config: dict, validation_records: set[int]
     return "validation" if record in validation_records else "train"
 
 
-def _source_snapshot(config: dict) -> dict:
+def _source_snapshot(config: dict, catalog_digest: str) -> dict:
     return {
-        name: hashlib.sha256(Path(config["data"][name]).read_bytes()).hexdigest()
-        for name in ("manifest", "records", "labels")
+        **{name: hashlib.sha256(Path(config["data"][name]).read_bytes()).hexdigest()
+           for name in ("manifest", "records")},
+        "labels": catalog_digest,
     }
 
 
@@ -90,7 +101,7 @@ def build_index(config: dict) -> dict:
     )
     with open(config["data"]["manifest"], newline="") as stream:
         manifest = list(csv.DictReader(stream))
-    labels = json.loads(Path(config["data"]["labels"]).read_text())["records"]
+    labels, catalog_digest = read_catalog(config["data"]["labels"])
     by_record = defaultdict(list)
     for row in manifest:
         if row["status"] != "OK":
@@ -176,7 +187,7 @@ def build_index(config: dict) -> dict:
             offsets.append(offset)
             centers.append([col - window[0], row - window[1]])
             sources.append(observation["source"])
-        if any(left >= right for left, right in zip(offsets, offsets[1:])):
+        if any(left >= right for left, right in itertools.pairwise(offsets)):
             raise ValueError(f"Non-increasing observation sequence for record {index}")
         samples.append({
             "record": index, "name": record["name"], "year": target_time.year,
@@ -189,7 +200,7 @@ def build_index(config: dict) -> dict:
         raise ValueError("Manifest and record table have different record sets")
     return {
         "schema": SCHEMA, "bands": list(BANDS), "crop_size": 500,
-        "source_snapshot": _source_snapshot(config), "source_files": file_stats,
+        "source_snapshot": _source_snapshot(config, catalog_digest), "source_files": file_stats,
         "split_specification": split_specification(config),
         "frames": frames, "samples": samples,
     }
@@ -205,7 +216,9 @@ def index_fingerprint(index: dict) -> str:
 def validate_cache_files(directory: Path, index: dict, config: dict) -> None:
     if index.get("schema") not in (SCHEMA, LEGACY_SCHEMA) or index.get("status") != "complete":
         raise ValueError("Cache is incomplete or has an incompatible schema")
-    if index["source_snapshot"] != _source_snapshot(config):
+    catalog, catalog_digest = read_catalog(config["data"]["labels"])
+    verify_catalog_labels(index["samples"], catalog)
+    if index["source_snapshot"] != _source_snapshot(config, catalog_digest):
         raise ValueError("Source manifest/records/labels changed: prepare a new cache")
     if index["fingerprint"] != index_fingerprint(index):
         raise ValueError("Cache metadata fingerprint mismatch")

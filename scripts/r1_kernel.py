@@ -14,6 +14,7 @@ from pathlib import Path
 
 import numpy as np
 
+from h9dp.pressure_labels import read_catalog, verify_catalog_labels
 from h9dp.r1 import (
     FEATURE_SCHEMA,
     QUALITY_WEIGHT,
@@ -74,6 +75,8 @@ def load_cache(root: Path) -> Cache:
     if digest != manifest["source_meta_sha256"]:
         raise ValueError("Source metadata changed after feature extraction")
     rows = source["records"]
+    catalog, _ = read_catalog()
+    verify_catalog_labels(rows, catalog)
     with np.load(root / "features.npz", allow_pickle=False) as loaded:
         data = dict(loaded.items())
     if "native_r3_index_sha256" in manifest:

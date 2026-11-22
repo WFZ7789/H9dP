@@ -2,8 +2,8 @@
 
 Reads the local 10-minute Himawari-9 R304 sequence, runs the exported V1 C++
 predictor at 10-minute cadence, and compares the inferred dP with the MOTIS
-catalog. Only the MOTIS catalog supplies observed dP, central pressure and POCI;
-centres are IBTrACS 3-hourly linear interpolation.
+catalog. The MOTIS references for dP, derived central pressure and POCI are
+catalog values, not field measurements. Centres are IBTrACS 3-hourly linear interpolation.
 """
 
 import argparse
@@ -161,7 +161,7 @@ def figure(args, series: list[dict], catalog: list[dict]) -> None:
                          "axes.unicode_minus": False, "axes.grid": True, "grid.alpha": 0.25})
 
     def stamps(rows):
-        return [datetime.strptime(r["time_utc"], "%Y-%m-%dT%H:%M:%SZ") for r in rows]
+        return [_time(r["time_utc"]) for r in rows]
 
     time = stamps(series)
     dp = np.array([float(r["dP_mean"]) for r in series])
@@ -176,7 +176,7 @@ def figure(args, series: list[dict], catalog: list[dict]) -> None:
                      label="V1 五折集成 ±1σ")
     top.plot(time, dp, color="#1f6fb4", linewidth=1.4, label="V1 推算 dP（10 min）")
     top.plot(cat_time, [float(r["motis_dp"]) for r in catalog], "o", color="#c0392b", markersize=5,
-             markerfacecolor="white", markeredgewidth=1.3, label="MOTIS 实测 dP（9 条记录）")
+             markerfacecolor="white", markeredgewidth=1.3, label="MOTIS 目录 dP（9 条记录）")
     top.set_ylabel("降压 dP（hPa）")
     top.legend(loc="lower right", frameon=False)
 
@@ -184,7 +184,7 @@ def figure(args, series: list[dict], catalog: list[dict]) -> None:
                         label="V1 五折集成 ±1σ")
     bottom.plot(time, pressure, color="#2e8b57", linewidth=1.4, label="推算中心气压 = POCI − dP")
     bottom.plot(cat_time, [float(r["motis_pressure"]) for r in catalog], "o", color="#c0392b", markersize=5,
-                markerfacecolor="white", markeredgewidth=1.3, label="MOTIS 实测气压（POCI − dP）")
+                markerfacecolor="white", markeredgewidth=1.3, label="MOTIS 目录中心气压（POCI − dP）")
     bottom.set_ylabel("中心气压（hPa）")
     bottom.legend(loc="lower left", frameon=False)
     bottom.xaxis.set_major_formatter(mdates.DateFormatter("%m-%d %H:%M", tz=UTC))

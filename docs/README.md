@@ -7,9 +7,12 @@
 
 全体记录的 dP RMSE 是主指标。546 条记录的已完成模型按全体折外 RMSE 排序。[评估口径与结果表](EVALUATION.md)
 
-- V1 极坐标云图与运动估计，全体 RMSE **8.901 hPa**。[V1 实验报告](V1/README.md)
+- V1 极坐标云图与运动估计，全体 RMSE **8.901 hPa**。[V1 实验报告](V1/README.md) ·
+  [全体折外误差—降压图](V1/ERROR_VS_DP.md) · [10 分钟运动消融](V1/MOTION_ABLATION_20261122.md)；
   Release 展板：[Sinlaku（2026）10 分钟降压与推算气压](V1/SINLAKU_POSTER_20261122.md)；
-  C++ 直接推理见 [C++20 推理库](V1/CPP_INFERENCE.md)。
+  C++ 直接推理见 [C++20 推理库](V1/CPP_INFERENCE.md)；发布口径、配对 bootstrap、
+  分箱偏差与时延拆分见 [V1 发布分析](V1/RELEASE_ANALYSIS.md)；组织度机制、
+  核权重与特征消融见 [Why it works](V1/WHY_IT_WORKS.md)。
 - C1 CDO 连续冷云环，全体 dP RMSE **9.112 hPa**，全体 CDO 温度 MAE 2.315°C。[C1 实验报告](C1/README.md)
 - EC1 原生眼区像素与 CDO 结构，全体 dP RMSE **12.195 hPa**，含折外 CDO 温度和不确定性。[EC1 实验报告](EC1/README.md)
 
@@ -69,5 +72,6 @@
 - 报告写清实际执行状态、数据范围、协议、指标和局限，不把计划当结果，
   不把训练拟合当验证/盲测精度。
 - 命令默认在仓库根目录执行；Markdown 链接相对文档自身。
-- 数据、检查点、原始日志和机器运行产物保留在 /mnt/data/H9dP/，不搬进 docs/。
+- 对外发布的图片和 PDF 随 Git 保存于对应的 `docs/<模型>/assets/`（共享资源用 `docs/assets/`）。
+- 数据、检查点、原始日志和原始运行产物保留在 `/mnt/data/H9dP/`，不搬进 `docs/`。
 - 历史运行目录中的不可变文档/源码快照不随本次 live 文档整理而迁移或修改。

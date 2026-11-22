@@ -8,6 +8,10 @@
 
 **主指标为全体记录的 dP RMSE（hPa），项目固定种子 1。** V1 在 546 条 Himawari 记录的五折开发评估中取得全体折外 RMSE **8.901 hPa**。Good、Fair、Poor 作为分组结果报告。[评估口径与已有结果](docs/EVALUATION.md) · [V1 报告](docs/V1/README.md) · [固定种子](SEED)
 
+**发布件为 `inference/` 的 C++20 推理库（`InferenceBest`）**：直接读 HSD/DAT、不需要 GPU，五折模型等权平均；与 Python 折外预测的最大差为 6.2×10⁻⁶ hPa。
+发布口径（排名是否统计可分、分箱偏差、时延拆分）、验收和局限见
+[V1 发布分析](docs/V1/RELEASE_ANALYSIS.md) 与 [C++20 推理库](docs/V1/CPP_INFERENCE.md)。
+
 命令行默认配置仍为历史 v2：六帧联合输入，2×2 像元重排为 250×250，随后 16 个卷积残差块始终保持 250×250 特征图，最后读出一个标量。不使用粗统计网格或提前的空间汇聚。实现说明见 [TRAINING_PLAN.md](docs/v2/TRAINING_PLAN.md)，配置见 [configs/train.yaml](configs/train.yaml)。
 
 新增 **P3 initial minimal**：无前置空间编码器的动态分辨率读取 Transformer，完整模型 **108,551 个可训练参数，硬限制 <155,000**。16 个查询联合读取原生像元、动态尺度观测和环境背景；保留亮温数值旁路，直接输出 dP。独立配置见 [configs/p3_minimal.yaml](configs/p3_minimal.yaml)，结构、限制和验证命令见 [P3_MINIMAL.md](docs/P3/P3_MINIMAL.md)。复用原有数据及逐记录目标，不覆盖旧模型或检查点。P3 已完成首轮正式训练：第 40 轮早停，第 20 轮验证最佳 RMSE 为 15.069 hPa，明显弱于 v2 的 10.963 hPa，当前保留为失败基线。实现、训练结果、只读消融与后续建议见 [P3 工作报告](docs/P3/P3_WORK_REPORT.md)。

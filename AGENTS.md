@@ -38,10 +38,12 @@ Store large datasets and outputs outside the repository, preferably under
   use the repository root as working directory unless explicitly stated. Fix
   incoming and outgoing links when moving documents; check with
   `tests/test_docs.py`.
-- Keep checkpoints, data, raw logs, and machine-generated run artifacts outside
-  Git under `/mnt/data/H9dP/`; link to their locations from textual reports.
-  Do not relocate or edit immutable historical run/source snapshots when
-  reorganizing the live documentation.
+- Store final images and PDFs intended for public documentation in Git under the
+  corresponding `docs/<model_name>/assets/` directory (or `docs/assets/` for
+  shared assets). Use document-relative links so readers do not need the external disk.
+- Keep checkpoints, data, raw logs, and raw run artifacts outside Git under
+  `/mnt/data/H9dP/`; link to their locations from textual reports. Do not relocate
+  or edit immutable historical run/source snapshots when reorganizing the live documentation.
 
 ## Build, Test, and Development Commands
 
@@ -165,7 +167,7 @@ There are no commits from which to infer message conventions. Use concise,
 imperative subjects such as `Add dataset metadata reader`. Keep commits focused.
 Pull requests should explain the change, validation performed, dependencies,
 and any data or configuration effects. Link relevant issues when available.
-Exclude extracted data, checkpoints, generated outputs, and caches from Git.
+Exclude extracted data, checkpoints, raw run outputs, and caches from Git.
 
 ## Storage & Training Requirements
 

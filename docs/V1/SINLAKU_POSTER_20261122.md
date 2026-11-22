@@ -2,10 +2,15 @@
 
 **状态：已完成。** 2026-11-22，固定种子 1，数据 2026-04-11 00:00Z–2026-04-15 00:00Z，
 推理 2026-04-11 05:00Z–2026-04-15 00:00Z，共 **547 步 / 10 分钟分辨率**。
-**全部 dP 均由 `inference/inference_best.cpp`（`inference_best_cli`）计算**，Python 只做
+**全部模型 dP 均由 `inference/inference_best.cpp`（`inference_best_cli`）计算**，Python 只做
 文件清单、中心位置插值、子进程调度和绘图；没有任何 Python 预测模型参与推理。
-观测 dP、POCI 与实测气压全部来自仓库根目录 [MOTIS_cyclone_records.json](../../MOTIS_cyclone_records.json)，
-不使用 JMA BST 或其他气 pressure 产品。推算气压是模型产物，不是实测中心气压。
+对照 dP、POCI 和由 POCI − dP 派生的中心气压均来自仓库根目录
+[MOTIS_cyclone_records.json](../../MOTIS_cyclone_records.json)，不使用 JMA BST 气压。
+目录对照值和模型推算气压都不是独立现场实测。
+
+![Sinlaku（2026）V1 十分钟降压与推算中心气压](assets/sinlaku_v1_poster.png)
+
+下载发布展板：[PNG](assets/sinlaku_v1_poster.png) · [PDF](assets/sinlaku_v1_poster.pdf)。
 
 ## 数据采集
 
@@ -50,7 +55,7 @@ y 均值 4.8 px（最大 18.3），即每帧都覆盖气旋本体。
 
 10 分钟推算降压 dP 从 34.4 hPa（04-11 07:10Z）升至 **111.5 hPa（04-13 12:10Z）**，
 随后回落到约 70 hPa。五折标准差均值 2.94 hPa，最大 9.17 hPa（4 月中旬前的组织阶段）。
-目录时刻对比（MOTIS 实测 dP 为唯一真值来源）：
+目录时刻对比（以 MOTIS 目录 dP 为参考）：
 
 | 记录 | 时刻（UTC） | 质量 | POCI | MOTIS dP | V1 dP（五折） | ±σ | V1 留出折 dP | 推算气压 |
 |---:|---|---|---:|---:|---:|---:|---:|---:|
@@ -70,13 +75,15 @@ RMSE 8.45 hPa，与 V1 全体 8.901 hPa 同一量级。9 条太少，不能据�
 
 ## 产物
 
-外部目录 `/mnt/data/H9dP/runs/v1/sinlaku_poster_20261122/`：
+发布展板随仓库存放于 `docs/V1/assets/`，由已有的 `series.csv` 和 `catalog_times.csv`
+重绘，仅更正了 MOTIS 对照图例，未重新推理。原始运行文件保留在外部目录
+`/mnt/data/H9dP/runs/v1/sinlaku_poster_20261122/`：
 
 | 文件 | 内容 |
 |---|---|
 | `series.csv` | 547 步：时刻、中心经纬度、五折 dP、均值与标准差 |
 | `catalog_times.csv` | 9 条目录记录：MOTIS dP/气压/POCI、五折 dP、留出折 dP、推算气压 |
-| `sinlaku_v1_poster.png` / `.pdf` | Release 展板图（上：dP；下：推算中心气压） |
+| `sinlaku_v1_poster.png` / `.pdf` | 原始运行生成的展板；对外使用上方仓库内的发布版 |
 | `build/inference_best_cli` | 本次使用的 C++ 可执行文件 |
 | `poster.log` | 运行日志 |
 
@@ -101,7 +108,7 @@ python -m scripts.sinlaku_poster \
 
 - 这是一次**已训练模型在 2026 年气旋上的连续推理展示**，不是新的泛化证据；V1 的独立现场
   观测检验仍待进行。Sinlaku 的 11 条记录本身已在 V1 的 546 条记录中。
-- 观测 dP 只有 9 条目录记录，且全部落在 04-12 05:00Z 之后；04-11 段的曲线无实测对照。
+- 对照 dP 只有 9 条目录记录，最早为 04-12 05:00Z；04-11 段的曲线无目录对照。
 - 推算气压由 MOTIS POCI 与模型 dP 合成，POCI 为目录值插值，不是实测环境气压廓线。
 - 04-11 前后的五折离散较大（最大 σ 9.17 hPa），该段结论应弱于 04-12 之后。
 
